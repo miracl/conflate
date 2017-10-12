@@ -1,0 +1,49 @@
+{
+    "title": "Person",
+    "type": "object",
+    "properties": {
+        "includes": { 
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "child_only": {
+          "type": "string",
+          "default": "child"
+        },
+        "parent_only": {
+          "type": "string",
+          "default": "parent"
+        },
+        "sibling_only": {
+          "type": "string",
+          "default": "sibling"
+        },
+        "parent_child": {
+          "type": "string",
+          "default": "parent"
+        },
+        "parent_sibling": {
+          "type": "string",
+          "default": "parent"
+        },
+        "sibling_child": {
+          "type": "string",
+          "default": "sibling"
+        },
+        "all": {
+          "type": "string",
+          "default": "parent"
+        }
+    },
+    "required": [
+      "child_only", 
+      "parent_only",
+      "sibling_only",
+      "parent_child",
+      "parent_sibling",
+      "sibling_child",
+      "all"
+    ]
+}

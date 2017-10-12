@@ -1,0 +1,10 @@
+{
+  "includes": [
+    "valid_child.json",
+    "valid_sibling.json"
+  ],
+  "parent_only" : "parent", 
+  "parent_child" : "parent", 
+  "parent_sibling" : "parent", 
+  "all": "parent"
+}

@@ -1,0 +1,18 @@
+language: go
+go: 
+  - 1.x
+
+install:
+  - go get
+  - go get github.com/golang/lint/golint
+  - go get github.com/modocache/gover
+  - go get github.com/mattn/goveralls
+  - go get github.com/stretchr/testify/assert
+
+script:
+  - go vet ./...
+  - test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"
+  - golint -set_exit_status ./...
+  - go test -coverprofile .coverprofile
+  - $GOPATH/bin/goveralls -v -coverprofile .coverprofile -service=travis-ci
+
