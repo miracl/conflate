@@ -7,11 +7,23 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-func unmarshalAll(data ...[]byte) ([]interface{}, error) {
+func marshalAll(fMarshal func(interface{}) ([]byte, error), data ...interface{}) ([][]byte, error) {
+	var outs [][]byte
+	for i, datum := range data {
+		out, err := fMarshal(datum)
+		if err != nil {
+			return nil, wrapError(err, "Could not marshal data %v", i)
+		}
+		outs = append(outs, out)
+	}
+	return outs, nil
+}
+
+func unmarshalAll(fUnmarshal func([]byte, interface{}) error, data ...[]byte) ([]interface{}, error) {
 	var outs []interface{}
 	for i, datum := range data {
 		var out interface{}
-		err := unmarshal(datum, &out)
+		err := fUnmarshal(datum, &out)
 		if err != nil {
 			return nil, wrapError(err, "Could not unmarshal data %v", i)
 		}
@@ -20,7 +32,7 @@ func unmarshalAll(data ...[]byte) ([]interface{}, error) {
 	return outs, nil
 }
 
-func unmarshal(data []byte, out interface{}) error {
+func unmarshalAny(data []byte, out interface{}) error {
 	errs := makeError("Could not unmarshal data")
 
 	err := jsonUnmarshal(data, out)

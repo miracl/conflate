@@ -1,51 +1,87 @@
 package conflate
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
-func TestUnmarshalAll(t *testing.T) {
-	data, err := unmarshalAll(testMarshalJSON, testMarshalYAML, testMarshalTOML)
+// --------
+
+func TestMarshalAll(t *testing.T) {
+	mockMarshal := func(obj interface{}) ([]byte, error) {
+		return []byte(obj.(string)), nil
+	}
+	data, err := marshalAll(mockMarshal, "a", "b", "c")
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(data))
-	assert.Equal(t, testMarshalData, data[0])
-	assert.Equal(t, testMarshalData, data[1])
-	assert.Equal(t, testMarshalData, data[2])
+	assert.Equal(t, []byte("a"), data[0])
+	assert.Equal(t, []byte("b"), data[1])
+	assert.Equal(t, []byte("c"), data[2])
+}
+
+func TestMarshalAll_Error(t *testing.T) {
+	mockMarshal := func(obj interface{}) ([]byte, error) {
+		return nil, errors.New("my error")
+	}
+	data, err := marshalAll(mockMarshal, "a")
+	assert.NotNil(t, err)
+	assert.Nil(t, data)
+	assert.Contains(t, err.Error(), "my error")
+}
+
+// --------
+
+func TestUnmarshalAll(t *testing.T) {
+	mockUnmarshal := func(data []byte, obj interface{}) error {
+		reflect.ValueOf(obj).Elem().Set(reflect.ValueOf(string(data)))
+		return nil
+	}
+	data, err := unmarshalAll(mockUnmarshal, []byte("1"), []byte("2"), []byte("3"))
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(data))
+	assert.Equal(t, "1", data[0])
+	assert.Equal(t, "2", data[1])
+	assert.Equal(t, "3", data[2])
 }
 
 func TestUnmarshalAll_Error(t *testing.T) {
-	data, err := unmarshalAll(testMarshalJSON, testMarshalInvalid, testMarshalTOML)
+	mockUnmarshal := func(data []byte, obj interface{}) error {
+		return errors.New("my error")
+	}
+	data, err := unmarshalAll(mockUnmarshal, []byte("1"))
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
+	assert.Contains(t, err.Error(), "my error")
 }
 
 // --------
 
 func TestUnmarshal_Json(t *testing.T) {
 	var out interface{}
-	err := unmarshal(testMarshalJSON, &out)
+	err := unmarshalAny(testMarshalJSON, &out)
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalData, out)
 }
 
 func TestUnmarshal_Yaml(t *testing.T) {
 	var out interface{}
-	err := unmarshal(testMarshalYAML, &out)
+	err := unmarshalAny(testMarshalYAML, &out)
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalData, out)
 }
 
 func TestUnmarshal_Toml(t *testing.T) {
 	var out interface{}
-	err := unmarshal(testMarshalTOML, &out)
+	err := unmarshalAny(testMarshalTOML, &out)
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalData, out)
 }
 
 func TestUnmarshal_Unsupported(t *testing.T) {
 	var out interface{}
-	err := unmarshal(testMarshalInvalid, &out)
+	err := unmarshalAny(testMarshalInvalid, &out)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not unmarshal data")
 	assert.Contains(t, err.Error(), "could not be unmarshalled as json")

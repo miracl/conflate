@@ -55,7 +55,7 @@ func FromGo(data ...interface{}) (*Conflate, error) {
 	return c, nil
 }
 
-// AddFiles merges the data from the given files into the Conflate instance
+// AddFiles recursively merges the data from the given files into the Conflate instance
 func (c *Conflate) AddFiles(paths ...string) error {
 	urls, err := toURLs(nil, paths...)
 	if err != nil {
@@ -64,40 +64,40 @@ func (c *Conflate) AddFiles(paths ...string) error {
 	return c.AddURLs(urls...)
 }
 
-// AddURLs merges the data from the given urls into the Conflate instance
+// AddURLs recursively merges the data from the given urls into the Conflate instance
 func (c *Conflate) AddURLs(urls ...url.URL) error {
-	data, err := loadURLs(urls...)
+	data, err := loadURLsRecursive(nil, urls...)
+	if err != nil {
+		return err
+	}
+	return c.MergeData(data...)
+}
+
+// AddGo recursively merges the given (json-serializable) golang objects into the Conflate instance
+func (c *Conflate) AddGo(objs ...interface{}) error {
+	data, err := marshalAll(jsonMarshal, objs...)
 	if err != nil {
 		return err
 	}
 	return c.AddData(data...)
 }
 
-// AddData merges the given data into the Conflate instance
+// AddData recursively merges the given data into the Conflate instance
 func (c *Conflate) AddData(data ...[]byte) error {
-	doms, err := unmarshalAll(data...)
+	data, err := loadDataRecursive(nil, data...)
+	if err != nil {
+		return err
+	}
+	return c.MergeData(data...)
+}
+
+// MergeData merges the given data into the Conflate instance
+func (c *Conflate) MergeData(data ...[]byte) error {
+	doms, err := unmarshalAll(unmarshalAny, data...)
 	if err != nil {
 		return err
 	}
 	err = mergeTo(&c.data, doms...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// AddGo merges the given golang objects into the Conflate instance
-func (c *Conflate) AddGo(data ...interface{}) error {
-	var doms []interface{}
-	for _, datum := range data {
-		var dom interface{}
-		err := jsonMarshalUnmarshal(datum, &dom)
-		if err != nil {
-			return err
-		}
-		doms = append(doms, dom)
-	}
-	err := mergeTo(&c.data, doms...)
 	if err != nil {
 		return err
 	}
