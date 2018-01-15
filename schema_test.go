@@ -28,10 +28,59 @@ func TestValidateSchema_Error(t *testing.T) {
 	assert.Contains(t, err.Error(), "Could not load json meta-schema")
 }
 
+func TestValidateSchemaTemporary_BadTempDir(t *testing.T) {
+	oldTempDir := tempDir
+	defer func() { tempDir = oldTempDir }()
+	tempDir = "missing"
+	err := validateSchemaTemporary(nil)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "no such file")
+}
+
+func TestValidateSchemaTemporary_WriteError(t *testing.T) {
+	oldMetaSchemaData := metaSchemaData
+	defer func() { metaSchemaData = oldMetaSchemaData }()
+	metaSchemaData = nil
+	err := validateSchemaTemporary(nil)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Failed to write metaschema")
+}
+
 func TestValidateSchemaTemporary_Error(t *testing.T) {
 	err := validateSchemaTemporary(make(chan int))
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "An error occurred during validation")
+}
+
+func TestValidateSchemaTemporary(t *testing.T) {
+	c := New()
+	err := c.SetSchemaData([]byte(`{
+			"title": "test",
+			"type": "object",
+			"properties": {
+				"test" : {
+					"type": "string"
+				}
+			}
+	}`))
+	assert.Nil(t, err)
+}
+
+func TestValidateSchemaTemporary_SchemaAnyOf(t *testing.T) {
+	c := New()
+	err := c.SetSchemaData([]byte(`{
+			"title": "test",
+			"type": "object",
+			"properties": {
+				"test" : {
+					"anyOf" : [
+						{ "type": "string" },
+						{ "type": "integer" }
+					]
+				}
+			}
+	}`))
+	assert.Nil(t, err)
 }
 
 func TestValidate(t *testing.T) {
