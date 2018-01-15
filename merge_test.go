@@ -196,7 +196,7 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 			if data2Map != nil {
 				data2Item = data2Map[name]
 			}
-			t.Logf("%v : %v : %v : %v", name, mergedItem, data1Item, data2Item)
+			//t.Logf("%v : %v : %v : %v", name, mergedItem, data1Item, data2Item)
 			testMergeCheck(t, mergedItem, data1Item, data2Item)
 		}
 	case reflect.Slice:
@@ -211,8 +211,8 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 			data2Arr = data2.([]interface{})
 		}
 
-		t.Logf("%v : %v : %v", mergedArr, data1Arr, data2Arr)
-		t.Logf("%v : %v : %v", len(mergedArr), len(data1Arr), len(data2Arr))
+		//t.Logf("%v : %v : %v", mergedArr, data1Arr, data2Arr)
+		//t.Logf("%v : %v : %v", len(mergedArr), len(data1Arr), len(data2Arr))
 
 		assert.Equal(t, len(data1Arr)+len(data2Arr), len(mergedArr))
 		data1Pad := make([]interface{}, len(data2Arr))
@@ -225,7 +225,7 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 		for i, mergedItem := range mergedArr {
 			data1Item := data1Arr[i]
 			data2Item := data2Arr[i]
-			t.Logf("%v : %v : %v : %v", i, mergedItem, data1Item, data2Item)
+			//t.Logf("%v : %v : %v : %v", i, mergedItem, data1Item, data2Item)
 			testMergeCheck(t, mergedItem, data1Item, data2Item)
 		}
 

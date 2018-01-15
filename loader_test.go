@@ -139,7 +139,7 @@ func TestToURLs(t *testing.T) {
 
 // --------
 
-func TestLoad_Error(t *testing.T) {
+func TestLoadLError(t *testing.T) {
 	data, err := loadURL(url.URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
@@ -162,17 +162,17 @@ func TestLoad(t *testing.T) {
 
 // --------
 
-func TestLoadAll_Error(t *testing.T) {
-	data, err := loadAll(url.URL{})
+func TestLoadURLs_Error(t *testing.T) {
+	data, err := loadURLs(url.URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
 
-func TestLoadAll(t *testing.T) {
+func TestLoadURLs(t *testing.T) {
 	url1, err := url.Parse("http://www.miracl.com")
 	root, err := workingDir()
 	url2, err := toURL(root, "./testdata/valid_parent.json")
-	data, err := loadAll(*url1, url2)
+	data, err := loadURLs(*url1, url2)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.Equal(t, len(data), 2)
@@ -211,72 +211,72 @@ func TestExtractIncludes_NilData(t *testing.T) {
 
 // --------
 
-func TestLoadURLs_LoadError(t *testing.T) {
-	data, err := loadURLs(url.URL{})
+func TestLoadURLsRecursive_LoadError(t *testing.T) {
+	data, err := loadURLsRecursive(nil, url.URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
 
-func TestLoadURLs_IncludesError(t *testing.T) {
+func TestLoadURLsRecursive_IncludesError(t *testing.T) {
 	root, err := workingDir()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
 	url, err := toURL(root, "loader.go")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLs(url)
+	data, err := loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not extract includes")
 	assert.Nil(t, data)
 }
 
-func TestLoadURLs_BadUrlInInclude(t *testing.T) {
+func TestLoadURLsRecursive_BadUrlInInclude(t *testing.T) {
 	root, err := workingDir()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
 	url, err := toURL(root, "testdata/bad_url_in_include.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLs(url)
+	data, err := loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not parse path")
 	assert.Nil(t, data)
 }
 
-func TestLoadURLs_MissingFileInInclude(t *testing.T) {
+func TestLoadURLsRecursive_MissingFileInInclude(t *testing.T) {
 	root, err := workingDir()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
 	url, err := toURL(root, "testdata/missing_file_in_include.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLs(url)
+	data, err := loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Failed to load url")
 	assert.Nil(t, data)
 }
 
-func TestLoadURLs_RecursiveInclude(t *testing.T) {
+func TestLoadURLsRecursive_RecursiveInclude(t *testing.T) {
 	root, err := workingDir()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
 	url, err := toURL(root, "testdata/recursive_include_parent.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLs(url)
+	data, err := loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The url recursively includes itself")
 	assert.Nil(t, data)
 }
 
-func TestLoadURLs(t *testing.T) {
+func TestLoadURLsRecursive(t *testing.T) {
 	root, err := workingDir()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
 	url, err := toURL(root, "testdata/valid_parent.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLs(url)
+	data, err := loadURLsRecursive(nil, url)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 }

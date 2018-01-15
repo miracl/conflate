@@ -309,3 +309,10 @@ func TestConflate_MarshalTOML(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalTOML, data)
 }
+
+func TestConflate_MergeDataError(t *testing.T) {
+	c := New()
+	err := c.MergeData([]byte("{not valid"))
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Could not unmarshal data")
+}
