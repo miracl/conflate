@@ -2,6 +2,8 @@ package conflate
 
 import (
 	"github.com/xeipuuv/gojsonschema"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -18,10 +20,22 @@ func validateSchema(schema interface{}) error {
 	return validate(schema, metaSchema)
 }
 
+var tempDir = os.TempDir()
+var tempFile = "json-schema-draft-04"
+
 // TODO: remove this version of validateSchema when the fix for https://github.com/xeipuuv/gojsonschema/issues/170 is done
 func validateSchemaTemporary(schema interface{}) error {
+	file, err := ioutil.TempFile(tempDir, tempFile)
+	if err != nil {
+		return makeError("Failed to open temporary file : %v", err)
+	}
+	defer os.Remove(file.Name())
+	n, err := file.Write(metaSchemaData)
+	if err != nil || n == 0 {
+		return makeError("Failed to write metaschema to temporary file : %v", err)
+	}
 	dataLoader := gojsonschema.NewGoLoader(schema)
-	schemaLoader := gojsonschema.NewReferenceLoader("http://json-schema.org/draft-04/schema")
+	schemaLoader := gojsonschema.NewReferenceLoader("file://" + file.Name())
 	formatErrs.clear()
 	result, err := gojsonschema.Validate(schemaLoader, dataLoader)
 	if err != nil {

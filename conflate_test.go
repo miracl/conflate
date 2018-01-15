@@ -176,7 +176,7 @@ func TestFromFiles_Schema(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestFromFiles_ValidationNoSchemaErro(t *testing.T) {
+func TestFromFiles_ValidationNoSchemaError(t *testing.T) {
 	c, err := FromFiles("testdata/valid_child.json")
 	assert.Nil(t, err)
 	err = c.Validate()
