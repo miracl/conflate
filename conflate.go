@@ -129,7 +129,7 @@ func (c *Conflate) SetSchemaData(data []byte) error {
 	if err != nil {
 		return wrapError(err, "Schema is not valid json")
 	}
-	err = validateSchemaTemporary(schema)
+	err = validateSchema(schema)
 	if err != nil {
 		return wrapError(err, "The schema is not valid against the meta-schema http://json-schema.org/draft-04/schema")
 	}

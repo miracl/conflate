@@ -13,6 +13,16 @@ func TestValidateSchema(t *testing.T) {
 	assert.Nil(t, err)
 	err = validateSchema(schema)
 	assert.Nil(t, err)
+	assert.NotNil(t, metaSchema)
+}
+
+func TestValidateSchema_AnyOf(t *testing.T) {
+	data := `{ "type": "object", "properties": { "test": { "anyOf": [ { "type": "integer" } ] } } }`
+	var schema interface{}
+	err := jsonUnmarshal([]byte(data), &schema)
+	assert.Nil(t, err)
+	err = validateSchema(schema)
+	assert.Nil(t, err)
 }
 
 func TestValidateSchema_Error(t *testing.T) {
@@ -26,12 +36,6 @@ func TestValidateSchema_Error(t *testing.T) {
 	err := validateSchema("test")
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not load json meta-schema")
-}
-
-func TestValidateSchemaTemporary_Error(t *testing.T) {
-	err := validateSchemaTemporary(make(chan int))
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "An error occurred during validation")
 }
 
 func TestValidate(t *testing.T) {
