@@ -92,12 +92,15 @@ func tomlUnmarshal(data []byte, out interface{}) error {
 	return nil
 }
 
-func jsonMarshal(in interface{}) ([]byte, error) {
-	data, err := json.Marshal(in)
+func jsonMarshal(data interface{}) ([]byte, error) {
+	buffer := bytes.Buffer{}
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(data)
 	if err != nil {
 		return nil, wrapError(err, "The data could not be marshalled to json")
 	}
-	return data, nil
+	return buffer.Bytes(), nil
 }
 
 func yamlMarshal(in interface{}) ([]byte, error) {
