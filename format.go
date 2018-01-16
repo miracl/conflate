@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/the4thamigo-uk/gojsonschema"
 	"golang.org/x/net/html"
 	"regexp"
 	"strings"

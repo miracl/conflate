@@ -1,7 +1,7 @@
 package conflate
 
 import (
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/the4thamigo-uk/gojsonschema"
 	"reflect"
 	"strings"
 )
@@ -16,18 +16,6 @@ func validateSchema(schema interface{}) error {
 		}
 	}
 	return validate(schema, metaSchema)
-}
-
-// TODO: remove this version of validateSchema when the fix for https://github.com/xeipuuv/gojsonschema/issues/170 is done
-func validateSchemaTemporary(schema interface{}) error {
-	dataLoader := gojsonschema.NewGoLoader(schema)
-	schemaLoader := gojsonschema.NewReferenceLoader("http://json-schema.org/draft-04/schema")
-	formatErrs.clear()
-	result, err := gojsonschema.Validate(schemaLoader, dataLoader)
-	if err != nil {
-		return wrapError(err, "An error occurred during validation")
-	}
-	return processResult(result)
 }
 
 func validate(data interface{}, schema interface{}) error {
