@@ -209,12 +209,14 @@ func TestTomlMarshal_Error(t *testing.T) {
 // --------
 
 var (
-	testMarshalData        = map[string]interface{}{"key": "value"}
+	testValue              = `value!£$%^&*()_+-={}[]:@~;'#<>?,./|`
+	testMarshalData        = map[string]interface{}{"key": testValue}
 	testMarshalDataInvalid = func() {}
-	testMarshalJSON        = []byte(`{"key":"value"}`)
-	testMarshalYAML        = []byte(`key: value
+	testMarshalJSON        = []byte(`{"key":"` + testValue + `"}
 `)
-	testMarshalTOML = []byte(`key = "value"
+	testMarshalYAML = []byte(`key: ` + testValue + `
+`)
+	testMarshalTOML = []byte(`key = "` + testValue + `"
 `)
 	testMarshalInvalid = []byte(`{invalid`)
 )
