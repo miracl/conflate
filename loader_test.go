@@ -52,6 +52,7 @@ func TestToURL_Blank(t *testing.T) {
 
 func TestToURL_RelativePathCwd(t *testing.T) {
 	root, err := url.Parse("/home/username/service/")
+	assert.Nil(t, err)
 	url, err := toURL(root, "../../fileName")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
@@ -70,6 +71,7 @@ func TestToURL_RelativePathCwd(t *testing.T) {
 
 func TestToURL_FullyQualifiedPath(t *testing.T) {
 	root, err := url.Parse("/no/matter/what/path")
+	assert.Nil(t, err)
 	url, err := toURL(root, "/full/path/file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
@@ -78,6 +80,7 @@ func TestToURL_FullyQualifiedPath(t *testing.T) {
 
 func TestToURL_FullyQualifiedFileUrl(t *testing.T) {
 	root, err := url.Parse("/no/matter/what/path")
+	assert.Nil(t, err)
 	url, err := toURL(root, "file:/full/path/file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
@@ -87,6 +90,7 @@ func TestToURL_FullyQualifiedFileUrl(t *testing.T) {
 
 func TestToURL_FullyQualifiedHttpPath(t *testing.T) {
 	root, err := url.Parse("/no/matter/what/path/")
+	assert.Nil(t, err)
 	url, err := toURL(root, "http://www.some.url.com")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
@@ -103,6 +107,7 @@ func TestToURL_FullyQualifiedHttpPath(t *testing.T) {
 
 func TestToURL_RelativeHttpUrl(t *testing.T) {
 	root, err := url.Parse("https://www.some.url.com/path/inside/")
+	assert.Nil(t, err)
 	url, err := toURL(root, "./file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
@@ -128,6 +133,7 @@ func TestToURLs_Error(t *testing.T) {
 
 func TestToURLs(t *testing.T) {
 	root, err := url.Parse("https://www.some.url.com/path/inside/")
+	assert.Nil(t, err)
 	urls, err := toURLs(root, "./one", "../two", "three")
 	assert.Nil(t, err)
 	assert.NotNil(t, urls)
@@ -153,6 +159,7 @@ func TestLoadURLError(t *testing.T) {
 
 func TestLoadURL(t *testing.T) {
 	url, err := url.Parse("http://www.miracl.com")
+	assert.Nil(t, err)
 	data, err := loadURL(*url)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
@@ -160,6 +167,7 @@ func TestLoadURL(t *testing.T) {
 
 func TestLoadURL_Relative(t *testing.T) {
 	root, err := workingDir()
+	assert.Nil(t, err)
 	test, err := toURL(root, "./testdata/valid_parent.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, test)
@@ -175,8 +183,11 @@ func TestLoadURLs_Error(t *testing.T) {
 
 func TestLoadURLs(t *testing.T) {
 	url1, err := url.Parse("http://www.miracl.com")
+	assert.Nil(t, err)
 	root, err := workingDir()
+	assert.Nil(t, err)
 	url2, err := toURL(root, "./testdata/valid_parent.json")
+	assert.Nil(t, err)
 	data, err := loadURLs(*url1, url2)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
