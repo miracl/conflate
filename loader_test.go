@@ -44,6 +44,12 @@ func TestToURL_Error(t *testing.T) {
 	assert.Equal(t, url, emptyURL)
 }
 
+func TestToURL_Blank(t *testing.T) {
+	_, err := toURL(nil, "")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "The file path is blank")
+}
+
 func TestToURL_RelativePathCwd(t *testing.T) {
 	root, err := url.Parse("/home/username/service/")
 	url, err := toURL(root, "../../fileName")
@@ -139,25 +145,24 @@ func TestToURLs(t *testing.T) {
 
 // --------
 
-func TestLoadLError(t *testing.T) {
+func TestLoadURLError(t *testing.T) {
 	data, err := loadURL(url.URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
 
-func TestLoad(t *testing.T) {
+func TestLoadURL(t *testing.T) {
 	url, err := url.Parse("http://www.miracl.com")
 	data, err := loadURL(*url)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
+}
 
+func TestLoadURL_Relative(t *testing.T) {
 	root, err := workingDir()
 	test, err := toURL(root, "./testdata/valid_parent.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, test)
-	data, err = loadURL(*url)
-	assert.Nil(t, err)
-	assert.NotNil(t, data)
 }
 
 // --------

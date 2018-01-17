@@ -143,6 +143,9 @@ func toURLs(rootURL *pkgurl.URL, paths ...string) ([]pkgurl.URL, error) {
 }
 
 func toURL(rootURL *pkgurl.URL, path string) (pkgurl.URL, error) {
+	if path == "" {
+		return emptyURL, makeError("The file path is blank")
+	}
 	var err error
 	if rootURL == nil {
 		rootURL, err = workingDir()
