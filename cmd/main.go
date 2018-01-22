@@ -8,6 +8,13 @@ import (
 	"strings"
 )
 
+func failIfError(err error) {
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
 func main() {
 
 	var data dataFlag
@@ -20,38 +27,24 @@ func main() {
 	flag.Parse()
 
 	c, err := conflate.FromFiles(data...)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	failIfError(err)
+
 	if *schema != "" {
 		err = c.SetSchemaFile(*schema)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		failIfError(err)
 	}
 	if *defaults {
 		err = c.ApplyDefaults()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		failIfError(err)
 	}
 	if *validate {
 		err = c.Validate()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		failIfError(err)
 	}
 	if *format != "" {
 		var data interface{}
 		err = c.Unmarshal(&data)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		failIfError(err)
 
 		var out []byte
 		switch *format {
@@ -62,10 +55,7 @@ func main() {
 		case "TOML":
 			out, err = c.MarshalTOML()
 		}
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		failIfError(err)
 		os.Stdout.Write(out)
 	}
 }
