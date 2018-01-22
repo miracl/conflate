@@ -174,3 +174,8 @@ func (c *Conflate) MarshalYAML() ([]byte, error) {
 func (c *Conflate) MarshalTOML() ([]byte, error) {
 	return tomlMarshal(c.data)
 }
+
+// MarshalSchema exports the schema as JSON
+func (c *Conflate) MarshalSchema() ([]byte, error) {
+	return jsonMarshal(c.schema)
+}
