@@ -311,9 +311,8 @@ func TestConflate_MarshalTOML(t *testing.T) {
 }
 
 func TestConflate_MarshalSchema(t *testing.T) {
-	c, err := FromFiles()
-	assert.Nil(t, err)
-	err = c.SetSchemaData([]byte("{}"))
+	c := New()
+	err := c.SetSchemaData([]byte("{}"))
 	assert.Nil(t, err)
 	data, err := c.MarshalSchema()
 	assert.Nil(t, err)
@@ -321,11 +320,18 @@ func TestConflate_MarshalSchema(t *testing.T) {
 }
 
 func TestConflate_MarshalSchemaNil(t *testing.T) {
-	c, err := FromFiles()
-	assert.Nil(t, err)
+	c := New()
 	data, err := c.MarshalSchema()
 	assert.Nil(t, err)
 	assert.Equal(t, string(data), "null\n")
+}
+
+func TestConflate_MarshalSchemaError(t *testing.T) {
+	c := New()
+	c.schema = make(chan int, 1)
+	_, err := c.MarshalSchema()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "The data could not be marshalled")
 }
 
 func TestConflate_MergeDataError(t *testing.T) {
