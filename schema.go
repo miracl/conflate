@@ -100,9 +100,7 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 	switch schemaType {
 	case "object":
 		if data == nil {
-			m := reflect.MakeMap(reflect.TypeOf(map[string]interface{}{}))
-			dataVal.Set(m)
-			data = dataVal.Interface()
+			break
 		}
 		dataProps, ok := data.(map[string]interface{})
 		if !ok {
@@ -140,21 +138,22 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 			}
 		}
 	case "array":
-		if data != nil {
-			dataItems, ok := data.([]interface{})
-			if !ok {
-				return makeContextError(ctx, "Node should be an 'array'")
-			}
-			if items, ok := schemaNode["items"]; ok {
-				schemaItem := items.(map[string]interface{})
-				for i, dataItem := range dataItems {
-					err := applyDefaultsRecursive(ctx.addInt(i), &dataItem, schemaItem)
-					if err != nil {
-						return wrapError(err, "Failed to apply defaults to array item")
-					}
-					if dataItem != nil {
-						dataItems[i] = dataItem
-					}
+		if data == nil {
+			break
+		}
+		dataItems, ok := data.([]interface{})
+		if !ok {
+			return makeContextError(ctx, "Node should be an 'array'")
+		}
+		if items, ok := schemaNode["items"]; ok {
+			schemaItem := items.(map[string]interface{})
+			for i, dataItem := range dataItems {
+				err := applyDefaultsRecursive(ctx.addInt(i), &dataItem, schemaItem)
+				if err != nil {
+					return wrapError(err, "Failed to apply defaults to array item")
+				}
+				if dataItem != nil {
+					dataItems[i] = dataItem
 				}
 			}
 		}

@@ -152,7 +152,20 @@ func TestApplyDefaults_ObjectDefault(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{"val": 1}, data)
 }
 
-func TestApplyDefaults_ObjectDefaultWithDefaultProperty(t *testing.T) {
+func TestApplyDefaults_ObjectDefaultNotApplied(t *testing.T) {
+	data := map[string]interface{}{"other": 1}
+	schema := map[string]interface{}{
+		"type": "object",
+		"default": map[string]interface{}{
+			"val": 1,
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}{"other": 1}, data)
+}
+
+func TestApplyDefaults_ObjectPropertyDefault(t *testing.T) {
 	var data interface{}
 	schema := map[string]interface{}{
 		"type":    "object",
@@ -169,7 +182,24 @@ func TestApplyDefaults_ObjectDefaultWithDefaultProperty(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{"val": 1}, data)
 }
 
-func TestApplyDefaults_ObjectPropertyDefault(t *testing.T) {
+func TestApplyDefaults_ObjectPropertyDefaultNotApplied(t *testing.T) {
+	data := map[string]interface{}{"other": 1}
+	schema := map[string]interface{}{
+		"type":    "object",
+		"default": map[string]interface{}{},
+		"properties": map[string]interface{}{
+			"val": map[string]interface{}{
+				"type":    "integer",
+				"default": 1,
+			},
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}{"val": 1, "other": 1}, data)
+}
+
+func TestApplyDefaults_ObjectPropertyDefaultNoparentDefault(t *testing.T) {
 	var data interface{}
 	schema := map[string]interface{}{
 		"type": "object",
@@ -182,11 +212,11 @@ func TestApplyDefaults_ObjectPropertyDefault(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}{"val": 1}, data)
+	assert.Equal(t, nil, data)
 }
 
 func TestApplyDefaults_ObjectPropertyFailed(t *testing.T) {
-	var data interface{}
+	data := map[string]interface{}{}
 	schema := map[string]interface{}{
 		"type": "object",
 		"properties": map[string]interface{}{
@@ -233,6 +263,49 @@ func TestApplyDefaults_ObjectAdditionalPropertyBool(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
+}
+
+func TestApplyDefaults_ArrayNoDefault(t *testing.T) {
+	var data interface{}
+	schema := map[string]interface{}{
+		"type": "array",
+		"items": map[string]interface{}{
+			"type":    "integer",
+			"default": 1,
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, nil, data)
+}
+
+func TestApplyDefaults_ArrayDefault(t *testing.T) {
+	var data interface{}
+	schema := map[string]interface{}{
+		"type":    "array",
+		"default": []interface{}{},
+		"items": map[string]interface{}{
+			"type":    "integer",
+			"default": 1,
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, []interface{}{}, data)
+}
+
+func TestApplyDefaults_ArrayElementDefault(t *testing.T) {
+	data := []interface{}{nil}
+	schema := map[string]interface{}{
+		"type": "array",
+		"items": map[string]interface{}{
+			"type":    "integer",
+			"default": 1,
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, []interface{}{1}, data)
 }
 
 // --------
@@ -410,12 +483,14 @@ var testSchema = []byte(`
 {
   "title": "test",
   "type": "object",
+  "default": {},
   "properties": {
     "int": { "type": "integer", "default": 1 },
     "str": { "type": "string", "default": "test" },
     "bool": { "type": "boolean", "default": true },
     "obj": {
       "type": "object",
+      "default": {},
       "properties": {
         "int": { "type": "integer", "default": 1 },
         "str": { "type": "string", "default": "test" },
@@ -462,7 +537,7 @@ var testSchema = []byte(`
           "bool": { "type": "boolean", "default": true }
         }
       },
-			"default" : [
+      "default" : [
 				{
 				"int": 1,
 				"str": "test",
