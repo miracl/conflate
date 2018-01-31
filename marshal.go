@@ -61,11 +61,7 @@ func jsonMarshalUnmarshal(in interface{}, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = jsonUnmarshal(data, out)
-	if err != nil {
-		return err
-	}
-	return nil
+	return jsonUnmarshal(data, out)
 }
 
 func jsonUnmarshal(data []byte, out interface{}) error {

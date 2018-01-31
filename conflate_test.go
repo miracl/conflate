@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"sync"
 	"testing"
-	"time"
 )
 
 type TestData struct {
@@ -63,18 +62,7 @@ func TestFromFilesRemote(t *testing.T) {
 		server.Shutdown(gocontext.Background())
 	}()
 
-	var err error
-
-	// wait for a couple of seconds for server to come up
-	for i := 0; i < 4; i++ {
-		_, err = http.Get("http://0.0.0.0:9999")
-		if err == nil {
-			break
-		}
-		time.Sleep(500 * time.Millisecond)
-		t.Log(err)
-	}
-	assert.Nil(t, err)
+	testWaitForURL(t, "http://0.0.0.0:9999")
 
 	c, err := FromFiles("http://0.0.0.0:9999/valid_parent.json?" + dummyQueryString)
 	assert.Nil(t, err)

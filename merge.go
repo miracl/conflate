@@ -79,9 +79,7 @@ func mergeRecursive(ctx context, pToData interface{}, fromData interface{}) erro
 		if !ok {
 			return makeContextError(ctx, "The destination value must be a []interface{}")
 		}
-		for _, fromItem := range fromItems {
-			toItems = append(toItems, fromItem)
-		}
+		toItems = append(toItems, fromItems...)
 		toVal.Set(reflect.ValueOf(toItems))
 
 	default:

@@ -548,31 +548,3 @@ var testSchema = []byte(`
   }
 }
 `)
-
-var testSchemaData1 = []byte(`
-{
-  "int": 0,
-  "str": "str",
-  "bool": false,
-	"obj": {
-		"str": "str"
-	}
-}`)
-
-var testSchema1 = []byte(`
-{
-  "title": "test",
-  "type": "object",
-  "properties": {
-    "int": { "type": "integer", "default": 1 },
-    "str": { "type": "string", "default": "test" },
-    "bool": { "type": "boolean", "default": true },
-    "obj": {
-			"type": "object",
-			"properties": {
-				"str": { "type": "string", "default": "test" }
-			}
-		}
-  }
-}
-`)

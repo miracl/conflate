@@ -108,7 +108,6 @@ func TestJsonMarshalUnmarshal_MarshalError(t *testing.T) {
 func TestJsonMarshalUnmarshal_UnmarshalError(t *testing.T) {
 	err := jsonMarshalUnmarshal(testMarshalData, testMarshalDataInvalid)
 	assert.NotNil(t, err)
-	t.Log(err)
 	assert.Contains(t, err.Error(), "could not be unmarshalled as json")
 }
 

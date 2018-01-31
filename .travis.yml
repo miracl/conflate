@@ -9,12 +9,14 @@ install:
   - go get github.com/mattn/goveralls
   - go get github.com/stretchr/testify/assert
   - go get github.com/gordonklaus/ineffassign
+  - go get honnef.co/go/tools/cmd/megacheck
 
 script:
   - go vet ./...
   - test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"
   - golint -set_exit_status ./...
   - ineffassign ./
+  - megacheck ./
   - go test -coverprofile .coverprofile
   - $GOPATH/bin/goveralls -v -coverprofile .coverprofile -service=travis-ci
 

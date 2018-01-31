@@ -1,9 +1,13 @@
 package conflate
 
 import (
+	gocontext "context"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"net/url"
+	"sync"
 	"testing"
+	"time"
 )
 
 // --------
@@ -157,12 +161,43 @@ func TestLoadURLError(t *testing.T) {
 	assert.Nil(t, data)
 }
 
+func testServer() func() {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	server := &http.Server{
+		Addr:    "0.0.0.0:9999",
+		Handler: http.FileServer(http.Dir("./testdata")),
+	}
+	go func() {
+		defer wg.Done()
+		server.ListenAndServe()
+	}()
+	return func() {
+		server.Shutdown(gocontext.Background())
+	}
+}
+func testWaitForURL(t *testing.T, url string) {
+	// wait for a couple of seconds for server to come up
+	for i := 0; i < 4; i++ {
+		_, err := http.Get(url)
+		if err == nil {
+			return
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	assert.FailNow(t, "could not connect to url : "+url)
+}
+
 func TestLoadURL(t *testing.T) {
-	url, err := url.Parse("http://www.miracl.com")
+	shutdown := testServer()
+	defer shutdown()
+	testWaitForURL(t, "http://0.0.0.0:9999")
+	url, err := url.Parse("http://0.0.0.0:9999/valid_parent.json")
 	assert.Nil(t, err)
 	data, err := loadURL(*url)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
+	assert.Contains(t, string(data), "parent")
 }
 
 func TestLoadURL_Relative(t *testing.T) {
@@ -182,7 +217,10 @@ func TestLoadURLs_Error(t *testing.T) {
 }
 
 func TestLoadURLs(t *testing.T) {
-	url1, err := url.Parse("http://www.miracl.com")
+	shutdown := testServer()
+	defer shutdown()
+	testWaitForURL(t, "http://0.0.0.0:9999")
+	url1, err := url.Parse("http://0.0.0.0:9999/valid_parent.json")
 	assert.Nil(t, err)
 	root, err := workingDir()
 	assert.Nil(t, err)
