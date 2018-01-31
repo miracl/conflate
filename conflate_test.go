@@ -25,7 +25,8 @@ func TestFromFiles(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 	var testData TestData
-	c.Unmarshal(&testData)
+	err = c.Unmarshal(&testData)
+	assert.Nil(t, err)
 	assert.Equal(t, "child", testData.ChildOnly)
 	assert.Equal(t, "parent", testData.ParentOnly)
 	assert.Equal(t, "sibling", testData.SiblingOnly)
@@ -33,6 +34,16 @@ func TestFromFiles(t *testing.T) {
 	assert.Equal(t, "parent", testData.ParentSibling)
 	assert.Equal(t, "sibling", testData.SiblingChild)
 	assert.Equal(t, "parent", testData.All)
+}
+
+func TestFromFiles_IncludesRemoved(t *testing.T) {
+	c, err := FromFiles("testdata/valid_parent.json")
+	assert.Nil(t, err)
+	assert.NotNil(t, c)
+	var testData map[string]interface{}
+	err = c.Unmarshal(&testData)
+	assert.Nil(t, err)
+	assert.Nil(t, testData["includes"])
 }
 
 func TestFromFilesRemote(t *testing.T) {

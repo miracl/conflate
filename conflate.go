@@ -101,7 +101,15 @@ func (c *Conflate) MergeData(data ...[]byte) error {
 	if err != nil {
 		return err
 	}
+	c.removeIncludes()
 	return nil
+}
+
+func (c *Conflate) removeIncludes() {
+	m, ok := c.data.(map[string]interface{})
+	if ok {
+		delete(m, "includes")
+	}
 }
 
 // SetSchemaFile loads a JSON v4 schema from the given path
