@@ -1,7 +1,7 @@
 package conflate
 
 import (
-	"github.com/the4thamigo-uk/gojsonschema"
+	"github.com/xeipuuv/gojsonschema"
 	"reflect"
 	"strings"
 )
