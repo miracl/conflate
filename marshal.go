@@ -7,10 +7,10 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-func marshalAll(fMarshal func(interface{}) ([]byte, error), data ...interface{}) ([][]byte, error) {
+func jsonMarshalAll(data ...interface{}) ([][]byte, error) {
 	var outs [][]byte
 	for i, datum := range data {
-		out, err := fMarshal(datum)
+		out, err := jsonMarshal(datum)
 		if err != nil {
 			return nil, wrapError(err, "Could not marshal data %v", i)
 		}
@@ -19,52 +19,16 @@ func marshalAll(fMarshal func(interface{}) ([]byte, error), data ...interface{})
 	return outs, nil
 }
 
-func unmarshalAll(fUnmarshal func([]byte, interface{}) error, data ...[]byte) ([]interface{}, error) {
-	var outs []interface{}
-	for i, datum := range data {
-		var out interface{}
-		err := fUnmarshal(datum, &out)
-		if err != nil {
-			return nil, wrapError(err, "Could not unmarshal data %v", i)
-		}
-		outs = append(outs, out)
-	}
-	return outs, nil
-}
-
-func unmarshalAny(data []byte, out interface{}) error {
-	errs := makeError("Could not unmarshal data")
-
-	err := jsonUnmarshal(data, out)
-	if err == nil {
-		return nil
-	}
-	errs = wrapError(err, errs.Error())
-
-	err = tomlUnmarshal(data, out)
-	if err == nil {
-		return nil
-	}
-	errs = wrapError(err, errs.Error())
-
-	err = yamlUnmarshal(data, out)
-	if err == nil {
-		return nil
-	}
-	errs = wrapError(err, errs.Error())
-
-	return errs
-}
-
 func jsonMarshalUnmarshal(in interface{}, out interface{}) error {
 	data, err := jsonMarshal(in)
 	if err != nil {
 		return err
 	}
-	return jsonUnmarshal(data, out)
+	return JSONUnmarshal(data, out)
 }
 
-func jsonUnmarshal(data []byte, out interface{}) error {
+// JSONUnmarshal unmarshals the data as JSON
+func JSONUnmarshal(data []byte, out interface{}) error {
 	err := json.Unmarshal(data, out)
 	if err != nil {
 		return wrapError(err, "The data could not be unmarshalled as json")
@@ -72,7 +36,8 @@ func jsonUnmarshal(data []byte, out interface{}) error {
 	return nil
 }
 
-func yamlUnmarshal(data []byte, out interface{}) error {
+// YAMLUnmarshal unmarshals the data as YAML
+func YAMLUnmarshal(data []byte, out interface{}) error {
 	err := yaml.Unmarshal(data, out)
 	if err != nil {
 		return wrapError(err, "The data could not be unmarshalled as yaml")
@@ -80,7 +45,8 @@ func yamlUnmarshal(data []byte, out interface{}) error {
 	return nil
 }
 
-func tomlUnmarshal(data []byte, out interface{}) error {
+// TOMLUnmarshal unmarshals the data as TOML
+func TOMLUnmarshal(data []byte, out interface{}) error {
 	err := toml.Unmarshal(data, out)
 	if err != nil {
 		return wrapError(err, "The data could not be unmarshalled as toml")

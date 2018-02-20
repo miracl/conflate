@@ -7,6 +7,25 @@ import (
 	"runtime"
 )
 
+func init() {
+	// define the unmarshallers for the given file extensions, blank extension is the global unmarshaller
+	conflate.Unmarshallers = conflate.UnmarshallerMap{
+		".json": {customJSONUnmarshal},
+		".jsn":  {conflate.JSONUnmarshal},
+		".yaml": {conflate.YAMLUnmarshal},
+		".yml":  {conflate.YAMLUnmarshal},
+		".toml": {conflate.TOMLUnmarshal},
+		".tml":  {conflate.TOMLUnmarshal},
+		"":      {conflate.JSONUnmarshal, conflate.YAMLUnmarshal, conflate.TOMLUnmarshal},
+	}
+}
+
+// example of a custom unmarshaller for JSON
+func customJSONUnmarshal(data []byte, out interface{}) error {
+	fmt.Println("Using custom JSON Unmarshaller")
+	return conflate.JSONUnmarshal(data, out)
+}
+
 func main() {
 	_, thisFile, _, _ := runtime.Caller(0)
 	thisDir := path.Dir(thisFile)
