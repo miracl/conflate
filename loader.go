@@ -97,10 +97,6 @@ func containsURL(searchURL *pkgurl.URL, urls []pkgurl.URL) bool {
 	return false
 }
 
-func newClient() http.Client {
-	return http.Client{Transport: newTransport()}
-}
-
 func newTransport() *http.Transport {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,

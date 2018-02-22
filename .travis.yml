@@ -16,7 +16,8 @@ script:
   - test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"
   - golint -set_exit_status ./...
   - ineffassign ./
-  - megacheck -simple.exit-non-zero -unused.exit-non-zero ./
+  - megacheck -simple.exit-non-zero=true -staticcheck.exit-non-zero=true -unused.exit-non-zero=true ./
+  - megacheck -tests=false -simple.enabled=false -staticcheck.enabled=false -unused.exit-non-zero=true ./
   - go test -coverprofile .coverprofile
   - $GOPATH/bin/goveralls -v -coverprofile .coverprofile -service=travis-ci
 
