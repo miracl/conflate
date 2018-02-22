@@ -203,33 +203,12 @@ func TestLoadURL(t *testing.T) {
 func TestLoadURL_Relative(t *testing.T) {
 	root, err := workingDir()
 	assert.Nil(t, err)
-	test, err := toURL(root, "./testdata/valid_parent.json")
+	url, err := toURL(root, "./testdata/valid_parent.json")
 	assert.Nil(t, err)
-	assert.NotNil(t, test)
-}
-
-// --------
-
-func TestLoadURLs_Error(t *testing.T) {
-	data, err := loadURLs(url.URL{})
-	assert.NotNil(t, err)
-	assert.Nil(t, data)
-}
-
-func TestLoadURLs(t *testing.T) {
-	shutdown := testServer()
-	defer shutdown()
-	testWaitForURL(t, "http://0.0.0.0:9999")
-	url1, err := url.Parse("http://0.0.0.0:9999/valid_parent.json")
+	data, err := loadURL(url)
 	assert.Nil(t, err)
-	root, err := workingDir()
-	assert.Nil(t, err)
-	url2, err := toURL(root, "./testdata/valid_parent.json")
-	assert.Nil(t, err)
-	data, err := loadURLs(*url1, url2)
-	assert.Nil(t, err)
-	assert.NotNil(t, data)
-	assert.Equal(t, len(data), 2)
+	assert.NotNil(t, url)
+	assert.Contains(t, string(data), "parent")
 }
 
 // --------
@@ -238,29 +217,6 @@ func TestNewClient(t *testing.T) {
 	c := newClient()
 	assert.NotNil(t, c)
 	assert.NotNil(t, c.Transport)
-}
-
-// --------
-
-func TestExtractIncludes_Error(t *testing.T) {
-	data := []byte{1, 2, 3}
-	paths, err := extractIncludes(data)
-	assert.NotNil(t, err)
-	assert.Nil(t, paths)
-}
-
-func TestExtractIncludes(t *testing.T) {
-	data := []byte(`{ "includes": [ "inc1", "inc2", "inc3"] }`)
-	paths, err := extractIncludes(data)
-	assert.Nil(t, err)
-	assert.Equal(t, []string{"inc1", "inc2", "inc3"}, paths)
-}
-
-func TestExtractIncludes_NilData(t *testing.T) {
-	data := []byte{}
-	paths, err := extractIncludes(data)
-	assert.Nil(t, err)
-	assert.Nil(t, paths)
 }
 
 // --------
@@ -280,7 +236,7 @@ func TestLoadURLsRecursive_IncludesError(t *testing.T) {
 	assert.NotNil(t, url)
 	data, err := loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not extract includes")
+	assert.Contains(t, err.Error(), "Could not unmarshal")
 	assert.Nil(t, data)
 }
 
@@ -333,4 +289,8 @@ func TestLoadURLsRecursive(t *testing.T) {
 	data, err := loadURLsRecursive(nil, url)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
+	assert.Equal(t, 3, len(data))
+	assert.Contains(t, data[0].url.String(), "valid_child.json")
+	assert.Contains(t, data[1].url.String(), "valid_sibling.json")
+	assert.Contains(t, data[2].url.String(), "valid_parent.json")
 }

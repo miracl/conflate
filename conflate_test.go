@@ -333,9 +333,16 @@ func TestConflate_MarshalSchemaError(t *testing.T) {
 	assert.Contains(t, err.Error(), "The data could not be marshalled")
 }
 
-func TestConflate_MergeDataError(t *testing.T) {
+func TestConflate_addDataError(t *testing.T) {
 	c := New()
-	err := c.MergeData([]byte("{not valid"))
+	err := c.AddData([]byte(`{"includes": ["missing"]}`))
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not unmarshal data")
+	assert.Contains(t, err.Error(), "Failed to load url")
+}
+
+func TestConflate_mergeDataError(t *testing.T) {
+	c := New()
+	err := c.AddData([]byte(`"x": {}`), []byte(`"x": []`))
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Failed to merge")
 }

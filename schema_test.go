@@ -9,7 +9,7 @@ func TestValidateSchema(t *testing.T) {
 	metaSchema = nil
 	data := `{"title": "test"}`
 	var schema interface{}
-	err := jsonUnmarshal([]byte(data), &schema)
+	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
 	err = validateSchema(schema)
 	assert.Nil(t, err)
@@ -19,7 +19,7 @@ func TestValidateSchema(t *testing.T) {
 func TestValidateSchema_AnyOf(t *testing.T) {
 	data := `{ "type": "object", "properties": { "test": { "anyOf": [ { "type": "integer" } ] } } }`
 	var schema interface{}
-	err := jsonUnmarshal([]byte(data), &schema)
+	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
 	err = validateSchema(schema)
 	assert.Nil(t, err)
@@ -41,9 +41,9 @@ func TestValidateSchema_Error(t *testing.T) {
 func TestValidate(t *testing.T) {
 	var data interface{}
 	var schema interface{}
-	err := jsonUnmarshal(testSchemaData, &data)
+	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchema, &schema)
+	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 	err = validate(data, schema)
 	assert.Nil(t, err)
@@ -52,7 +52,7 @@ func TestValidate(t *testing.T) {
 func TestValidate_ValidateError(t *testing.T) {
 	var data interface{}
 	var schema interface{}
-	err := jsonUnmarshal(testSchemaData, &data)
+	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
 	err = validate(data, schema)
 	assert.NotNil(t, err)
@@ -63,11 +63,11 @@ func TestValidate_ValidateError(t *testing.T) {
 func TestValidate_NotValid(t *testing.T) {
 	var data map[string]interface{}
 	var schema map[string]interface{}
-	err := jsonUnmarshal(testSchemaData, &data)
+	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchema, &schema)
+	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchema, &schema)
+	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 	obj := data["obj"].(map[string]interface{})
 	obj["str"] = 123
@@ -81,9 +81,9 @@ func TestValidate_NotValid(t *testing.T) {
 func TestValidate_CustomFormatError(t *testing.T) {
 	var data interface{}
 	var schema map[string]interface{}
-	err := jsonUnmarshal(testSchemaData, &data)
+	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchema, &schema)
+	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 	props := schema["properties"].(map[string]interface{})
 	str := props["str"].(map[string]interface{})
@@ -378,9 +378,9 @@ func TestApplyDefaults_Empty(t *testing.T) {
 	var data interface{}
 	var defaults interface{}
 	var schema interface{}
-	err := jsonUnmarshal(testSchemaDefaults, &defaults)
+	err := JSONUnmarshal(testSchemaDefaults, &defaults)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchema, &schema)
+	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 	err = applyDefaults(&data, schema)
 	assert.Nil(t, err)
@@ -391,11 +391,11 @@ func TestApplyDefaults_NoDefaults(t *testing.T) {
 	var data interface{}
 	var dataExpected interface{}
 	var schema interface{}
-	err := jsonUnmarshal(testSchemaData, &data)
+	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchemaData, &dataExpected)
+	err = JSONUnmarshal(testSchemaData, &dataExpected)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchema, &schema)
+	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 	err = applyDefaults(&data, schema)
 	assert.Nil(t, err)
@@ -405,9 +405,9 @@ func TestApplyDefaults_NoDefaults(t *testing.T) {
 func TestApplyDefaults_MissingIntFields(t *testing.T) {
 	var data map[string]interface{}
 	var schema interface{}
-	err := jsonUnmarshal(testSchemaData, &data)
+	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
-	err = jsonUnmarshal(testSchema, &schema)
+	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 
 	delete(data, "int")

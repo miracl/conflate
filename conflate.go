@@ -70,12 +70,12 @@ func (c *Conflate) AddURLs(urls ...url.URL) error {
 	if err != nil {
 		return err
 	}
-	return c.MergeData(data...)
+	return c.mergeData(data...)
 }
 
 // AddGo recursively merges the given (json-serializable) golang objects into the Conflate instance
 func (c *Conflate) AddGo(objs ...interface{}) error {
-	data, err := marshalAll(jsonMarshal, objs...)
+	data, err := jsonMarshalAll(objs...)
 	if err != nil {
 		return err
 	}
@@ -84,32 +84,11 @@ func (c *Conflate) AddGo(objs ...interface{}) error {
 
 // AddData recursively merges the given data into the Conflate instance
 func (c *Conflate) AddData(data ...[]byte) error {
-	data, err := loadDataRecursive(nil, data...)
+	fdata, err := wrapFiledatas(data...)
 	if err != nil {
 		return err
 	}
-	return c.MergeData(data...)
-}
-
-// MergeData merges the given data into the Conflate instance
-func (c *Conflate) MergeData(data ...[]byte) error {
-	doms, err := unmarshalAll(unmarshalAny, data...)
-	if err != nil {
-		return err
-	}
-	err = mergeTo(&c.data, doms...)
-	if err != nil {
-		return err
-	}
-	c.removeIncludes()
-	return nil
-}
-
-func (c *Conflate) removeIncludes() {
-	m, ok := c.data.(map[string]interface{})
-	if ok {
-		delete(m, "includes")
-	}
+	return c.addData(fdata...)
 }
 
 // SetSchemaFile loads a JSON v4 schema from the given path
@@ -133,7 +112,7 @@ func (c *Conflate) SetSchemaURL(url url.URL) error {
 // SetSchemaData loads a JSON v4 schema from the given data
 func (c *Conflate) SetSchemaData(data []byte) error {
 	var schema interface{}
-	err := jsonUnmarshal(data, &schema)
+	err := JSONUnmarshal(data, &schema)
 	if err != nil {
 		return wrapError(err, "Schema is not valid json")
 	}
@@ -186,4 +165,17 @@ func (c *Conflate) MarshalTOML() ([]byte, error) {
 // MarshalSchema exports the schema as JSON
 func (c *Conflate) MarshalSchema() ([]byte, error) {
 	return jsonMarshal(c.schema)
+}
+
+func (c *Conflate) addData(fdata ...filedata) error {
+	fdata, err := loadDataRecursive(nil, fdata...)
+	if err != nil {
+		return err
+	}
+	return c.mergeData(fdata...)
+}
+
+func (c *Conflate) mergeData(fdata ...filedata) error {
+	doms := filedatas(fdata).objs()
+	return mergeTo(&c.data, doms...)
 }

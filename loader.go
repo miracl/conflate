@@ -12,18 +12,6 @@ import (
 var emptyURL = pkgurl.URL{}
 var getwd = os.Getwd
 
-func loadURLs(urls ...pkgurl.URL) ([][]byte, error) {
-	var allData [][]byte
-	for _, url := range urls {
-		data, err := loadURL(url)
-		if err != nil {
-			return nil, err
-		}
-		allData = append(allData, data)
-	}
-	return allData, nil
-}
-
 func loadURL(url pkgurl.URL) ([]byte, error) {
 	client := http.Client{Transport: newTransport()}
 	resp, err := client.Get(url.String())
@@ -38,8 +26,8 @@ func loadURL(url pkgurl.URL) ([]byte, error) {
 	return data, err
 }
 
-func loadURLsRecursive(parentUrls []pkgurl.URL, urls ...pkgurl.URL) ([][]byte, error) {
-	var allData [][]byte
+func loadURLsRecursive(parentUrls []pkgurl.URL, urls ...pkgurl.URL) (filedatas, error) {
+	var allData filedatas
 	for _, url := range urls {
 		data, err := loadURLRecursive(parentUrls, url)
 		if err != nil {
@@ -50,16 +38,20 @@ func loadURLsRecursive(parentUrls []pkgurl.URL, urls ...pkgurl.URL) ([][]byte, e
 	return allData, nil
 }
 
-func loadURLRecursive(parentUrls []pkgurl.URL, url pkgurl.URL) ([][]byte, error) {
+func loadURLRecursive(parentUrls []pkgurl.URL, url pkgurl.URL) (filedatas, error) {
 	data, err := loadURL(url)
 	if err != nil {
 		return nil, err
 	}
-	return loadDatumRecursive(parentUrls, &url, data)
+	fdata, err := newFiledata(data, url)
+	if err != nil {
+		return nil, err
+	}
+	return loadDatumRecursive(parentUrls, &url, fdata)
 }
 
-func loadDataRecursive(parentUrls []pkgurl.URL, data ...[]byte) ([][]byte, error) {
-	var allData [][]byte
+func loadDataRecursive(parentUrls []pkgurl.URL, data ...filedata) (filedatas, error) {
+	var allData filedatas
 	for _, datum := range data {
 		childData, err := loadDatumRecursive(parentUrls, nil, datum)
 		if err != nil {
@@ -70,15 +62,11 @@ func loadDataRecursive(parentUrls []pkgurl.URL, data ...[]byte) ([][]byte, error
 	return allData, nil
 }
 
-func loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data []byte) ([][]byte, error) {
+func loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data filedata) (filedatas, error) {
 	if containsURL(url, parentUrls) {
 		return nil, makeError("The url recursively includes itself (%v)", url)
 	}
-	childPaths, err := extractIncludes(data)
-	if err != nil {
-		return nil, err
-	}
-	childUrls, err := toURLs(url, childPaths...)
+	childUrls, err := toURLs(url, data.includes...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +79,7 @@ func loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data []byte) (
 	if err != nil {
 		return nil, err
 	}
-	var allData [][]byte
+	var allData filedatas
 	allData = append(allData, childData...)
 	allData = append(allData, data)
 	return allData, nil
@@ -162,17 +150,6 @@ func toURL(rootURL *pkgurl.URL, path string) (pkgurl.URL, error) {
 		url.RawQuery = rootURL.RawQuery
 	}
 	return *url, nil
-}
-
-func extractIncludes(data []byte) ([]string, error) {
-	out := struct {
-		Includes []string
-	}{}
-	err := unmarshalAny(data, &out)
-	if err != nil {
-		return nil, wrapError(err, "Could not extract includes")
-	}
-	return out.Includes, nil
 }
 
 func workingDir() (*pkgurl.URL, error) {

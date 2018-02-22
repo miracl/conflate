@@ -10,7 +10,7 @@ var metaSchema interface{}
 
 func validateSchema(schema interface{}) error {
 	if metaSchema == nil {
-		err := jsonUnmarshal(metaSchemaData, &metaSchema)
+		err := JSONUnmarshal(metaSchemaData, &metaSchema)
 		if err != nil {
 			return wrapError(err, "Could not load json meta-schema")
 		}
@@ -109,16 +109,14 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 		var schemaProps map[string]interface{}
 		if props, ok := schemaNode["properties"]; ok {
 			schemaProps = props.(map[string]interface{})
-			if schemaProps != nil {
-				for name, schemaProp := range schemaProps {
-					dataProp := dataProps[name]
-					err := applyDefaultsRecursive(ctx.add(name), &dataProp, schemaProp)
-					if err != nil {
-						return wrapError(err, "Failed to apply defaults to object property")
-					}
-					if dataProp != nil {
-						dataProps[name] = dataProp
-					}
+			for name, schemaProp := range schemaProps {
+				dataProp := dataProps[name]
+				err := applyDefaultsRecursive(ctx.add(name), &dataProp, schemaProp)
+				if err != nil {
+					return wrapError(err, "Failed to apply defaults to object property")
+				}
+				if dataProp != nil {
+					dataProps[name] = dataProp
 				}
 			}
 		}
