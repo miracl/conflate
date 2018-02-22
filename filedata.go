@@ -39,10 +39,17 @@ func newFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
 	fd := filedata{bytes: bytes, url: url}
 	err := fd.unmarshal()
 	if err != nil {
-		return fd, err
+		return fd, fd.wrapError(err)
 	}
 	err = fd.extractIncludes()
-	return fd, err
+	return fd, fd.wrapError(err)
+}
+
+func (fd *filedata) wrapError(err error) error {
+	if fd.url == emptyURL {
+		return err
+	}
+	return wrapError(err, "Error processing %v", fd.url.String())
 }
 
 func wrapFiledata(bytes []byte) (filedata, error) {
