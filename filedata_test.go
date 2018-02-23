@@ -1,6 +1,7 @@
 package conflate
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	pkgurl "net/url"
 	"testing"
@@ -16,6 +17,32 @@ func testFiledataNewAssert(t *testing.T, data []byte, path string) filedata {
 	fd, err := testFiledataNew(t, data, path)
 	assert.Nil(t, err)
 	return fd
+}
+
+func TestFiledata_WrapErrorNil(t *testing.T) {
+	fd, err := testFiledataNew(t, testMarshalJSON, "myurl")
+	assert.Nil(t, err)
+	err = fd.wrapError(nil)
+	assert.Nil(t, err)
+}
+
+func TestFiledata_WrapError(t *testing.T) {
+	fd, err := testFiledataNew(t, testMarshalJSON, "myurl")
+	assert.Nil(t, err)
+	err = errors.New("My Error")
+	err = fd.wrapError(err)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "My Error")
+	assert.Contains(t, err.Error(), "Error processing myurl")
+}
+
+func TestFiledata_WrapErrorBlank(t *testing.T) {
+	fd, err := testFiledataNew(t, testMarshalJSON, "")
+	assert.Nil(t, err)
+	err1 := errors.New("My Error")
+	err2 := fd.wrapError(err1)
+	assert.NotNil(t, err2)
+	assert.Equal(t, err1, err2)
 }
 
 func TestFiledata_JSONAsAny(t *testing.T) {
