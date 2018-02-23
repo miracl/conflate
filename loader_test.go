@@ -213,14 +213,6 @@ func TestLoadURL_Relative(t *testing.T) {
 
 // --------
 
-func TestNewClient(t *testing.T) {
-	c := newClient()
-	assert.NotNil(t, c)
-	assert.NotNil(t, c.Transport)
-}
-
-// --------
-
 func TestLoadURLsRecursive_LoadError(t *testing.T) {
 	data, err := loadURLsRecursive(nil, url.URL{})
 	assert.NotNil(t, err)

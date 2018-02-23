@@ -7,26 +7,6 @@ import (
 	"testing"
 )
 
-func TestMergeAll(t *testing.T) {
-	data1 := map[string]interface{}{"x": 1}
-	data2 := map[string]interface{}{"y": 1}
-	data, err := mergeAll(data1, data2)
-	assert.Nil(t, err)
-	assert.NotNil(t, data)
-	m := data.(map[string]interface{})
-	assert.NotNil(t, m)
-	assert.Contains(t, m, "x")
-	assert.Contains(t, m, "y")
-}
-
-func TestMergeAll_MergeToError(t *testing.T) {
-	data1 := map[string]interface{}{}
-	data2 := []interface{}{}
-	data, err := mergeAll(data1, data2)
-	assert.NotNil(t, err)
-	assert.Nil(t, data)
-}
-
 func TestMergeTo(t *testing.T) {
 	var toData interface{}
 	data1 := 1

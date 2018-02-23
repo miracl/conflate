@@ -4,15 +4,6 @@ import (
 	"reflect"
 )
 
-func mergeAll(fromData ...interface{}) (interface{}, error) {
-	var toData interface{}
-	err := mergeTo(&toData, fromData...)
-	if err != nil {
-		return nil, err
-	}
-	return toData, nil
-}
-
 func mergeTo(toData interface{}, fromData ...interface{}) error {
 	for _, fromDatum := range fromData {
 		err := merge(toData, fromDatum)
