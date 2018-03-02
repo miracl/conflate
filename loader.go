@@ -12,24 +12,14 @@ import (
 var emptyURL = pkgurl.URL{}
 var getwd = os.Getwd
 
-func loadURL(url pkgurl.URL) ([]byte, error) {
-	client := http.Client{Transport: newTransport()}
-	resp, err := client.Get(url.String())
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return nil, makeError("Failed to load url : %v : %v", resp.StatusCode, url.String())
-	}
-	return data, err
+type loader struct {
+	newFiledata func([]byte, pkgurl.URL) (filedata, error)
 }
 
-func loadURLsRecursive(parentUrls []pkgurl.URL, urls ...pkgurl.URL) (filedatas, error) {
+func (l *loader) loadURLsRecursive(parentUrls []pkgurl.URL, urls ...pkgurl.URL) (filedatas, error) {
 	var allData filedatas
 	for _, url := range urls {
-		data, err := loadURLRecursive(parentUrls, url)
+		data, err := l.loadURLRecursive(parentUrls, url)
 		if err != nil {
 			return nil, err
 		}
@@ -38,22 +28,22 @@ func loadURLsRecursive(parentUrls []pkgurl.URL, urls ...pkgurl.URL) (filedatas, 
 	return allData, nil
 }
 
-func loadURLRecursive(parentUrls []pkgurl.URL, url pkgurl.URL) (filedatas, error) {
+func (l *loader) loadURLRecursive(parentUrls []pkgurl.URL, url pkgurl.URL) (filedatas, error) {
 	data, err := loadURL(url)
 	if err != nil {
 		return nil, err
 	}
-	fdata, err := newFiledata(data, url)
+	fdata, err := l.newFiledata(data, url)
 	if err != nil {
 		return nil, err
 	}
-	return loadDatumRecursive(parentUrls, &url, fdata)
+	return l.loadDatumRecursive(parentUrls, &url, fdata)
 }
 
-func loadDataRecursive(parentUrls []pkgurl.URL, data ...filedata) (filedatas, error) {
+func (l *loader) loadDataRecursive(parentUrls []pkgurl.URL, data ...filedata) (filedatas, error) {
 	var allData filedatas
 	for _, datum := range data {
-		childData, err := loadDatumRecursive(parentUrls, nil, datum)
+		childData, err := l.loadDatumRecursive(parentUrls, nil, datum)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +52,7 @@ func loadDataRecursive(parentUrls []pkgurl.URL, data ...filedata) (filedatas, er
 	return allData, nil
 }
 
-func loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data filedata) (filedatas, error) {
+func (l *loader) loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data filedata) (filedatas, error) {
 	if containsURL(url, parentUrls) {
 		return nil, makeError("The url recursively includes itself (%v)", url)
 	}
@@ -75,7 +65,7 @@ func loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data filedata)
 	if url != nil {
 		newParentUrls = append(newParentUrls, *url)
 	}
-	childData, err := loadURLsRecursive(newParentUrls, childUrls...)
+	childData, err := l.loadURLsRecursive(newParentUrls, childUrls...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,16 +75,34 @@ func loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data filedata)
 	return allData, nil
 }
 
-func containsURL(searchURL *pkgurl.URL, urls []pkgurl.URL) bool {
-	if searchURL == nil {
-		return false
-	}
-	for _, url := range urls {
-		if url == *searchURL {
-			return true
+func (l *loader) wrapFiledata(bytes []byte) (filedata, error) {
+	return l.newFiledata(bytes, emptyURL)
+}
+
+func (l *loader) wrapFiledatas(bytes ...[]byte) (filedatas, error) {
+	var fds []filedata
+	for _, b := range bytes {
+		fd, err := l.wrapFiledata(b)
+		if err != nil {
+			return nil, err
 		}
+		fds = append(fds, fd)
 	}
-	return false
+	return fds, nil
+}
+
+func loadURL(url pkgurl.URL) ([]byte, error) {
+	client := http.Client{Transport: newTransport()}
+	resp, err := client.Get(url.String())
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, makeError("Failed to load url : %v : %v", resp.StatusCode, url.String())
+	}
+	return data, err
 }
 
 func newTransport() *http.Transport {
@@ -146,6 +154,18 @@ func toURL(rootURL *pkgurl.URL, path string) (pkgurl.URL, error) {
 		url.RawQuery = rootURL.RawQuery
 	}
 	return *url, nil
+}
+
+func containsURL(searchURL *pkgurl.URL, urls []pkgurl.URL) bool {
+	if searchURL == nil {
+		return false
+	}
+	for _, url := range urls {
+		if url == *searchURL {
+			return true
+		}
+	}
+	return false
 }
 
 func workingDir() (*pkgurl.URL, error) {

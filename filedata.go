@@ -2,6 +2,7 @@ package conflate
 
 import (
 	pkgurl "net/url"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -45,27 +46,16 @@ func newFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
 	return fd, fd.wrapError(err)
 }
 
+func newExpandedFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
+	expBytes := []byte(os.ExpandEnv(string(bytes)))
+	return newFiledata(expBytes, url)
+}
+
 func (fd *filedata) wrapError(err error) error {
 	if fd.url == emptyURL {
 		return err
 	}
 	return wrapError(err, "Error processing %v", fd.url.String())
-}
-
-func wrapFiledata(bytes []byte) (filedata, error) {
-	return newFiledata(bytes, emptyURL)
-}
-
-func wrapFiledatas(bytes ...[]byte) (filedatas, error) {
-	var fds []filedata
-	for _, b := range bytes {
-		fd, err := wrapFiledata(b)
-		if err != nil {
-			return nil, err
-		}
-		fds = append(fds, fd)
-	}
-	return fds, nil
 }
 
 func (fd *filedata) unmarshal() error {

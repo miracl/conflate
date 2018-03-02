@@ -213,8 +213,10 @@ func TestLoadURL_Relative(t *testing.T) {
 
 // --------
 
+var testLoader = loader{newFiledata: newFiledata}
+
 func TestLoadURLsRecursive_LoadError(t *testing.T) {
-	data, err := loadURLsRecursive(nil, url.URL{})
+	data, err := testLoader.loadURLsRecursive(nil, url.URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
@@ -226,7 +228,7 @@ func TestLoadURLsRecursive_IncludesError(t *testing.T) {
 	url, err := toURL(root, "loader.go")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLsRecursive(nil, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not unmarshal")
 	assert.Nil(t, data)
@@ -239,7 +241,7 @@ func TestLoadURLsRecursive_BadUrlInInclude(t *testing.T) {
 	url, err := toURL(root, "testdata/bad_url_in_include.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLsRecursive(nil, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not parse path")
 	assert.Nil(t, data)
@@ -252,7 +254,7 @@ func TestLoadURLsRecursive_MissingFileInInclude(t *testing.T) {
 	url, err := toURL(root, "testdata/missing_file_in_include.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLsRecursive(nil, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Failed to load url")
 	assert.Nil(t, data)
@@ -265,7 +267,7 @@ func TestLoadURLsRecursive_RecursiveInclude(t *testing.T) {
 	url, err := toURL(root, "testdata/recursive_include_parent.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLsRecursive(nil, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The url recursively includes itself")
 	assert.Nil(t, data)
@@ -278,7 +280,7 @@ func TestLoadURLsRecursive(t *testing.T) {
 	url, err := toURL(root, "testdata/valid_parent.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
-	data, err := loadURLsRecursive(nil, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.Equal(t, 3, len(data))
