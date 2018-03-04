@@ -136,28 +136,28 @@ func TestFiledata_TOMLAsJSON(t *testing.T) {
 }
 
 func TestFiledata_NoIncludes(t *testing.T) {
-	fd, err := wrapFiledata([]byte(`{"x": 1}`))
+	fd, err := testLoader.wrapFiledata([]byte(`{"x": 1}`))
 	assert.Nil(t, err)
 	assert.Nil(t, fd.obj["includes"])
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
 func TestFiledata_BlankIncludes(t *testing.T) {
-	fd, err := wrapFiledata([]byte(`{"includes":[], "x": 1}`))
+	fd, err := testLoader.wrapFiledata([]byte(`{"includes":[], "x": 1}`))
 	assert.Nil(t, err)
 	assert.Nil(t, fd.obj["includes"])
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
 func TestFiledata_NullIncludes(t *testing.T) {
-	fd, err := wrapFiledata([]byte(`{"includes":null, "x": 1}`))
+	fd, err := testLoader.wrapFiledata([]byte(`{"includes":null, "x": 1}`))
 	assert.Nil(t, err)
 	assert.Nil(t, fd.obj["includes"])
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
 func TestFiledata_Includes(t *testing.T) {
-	fd, err := wrapFiledata([]byte(`{"includes":["test1", "test2"], "x": 1}`))
+	fd, err := testLoader.wrapFiledata([]byte(`{"includes":["test1", "test2"], "x": 1}`))
 	assert.Nil(t, err)
 	assert.Equal(t, fd.includes, []string{"test1", "test2"})
 	assert.Nil(t, fd.obj["includes"])
@@ -165,7 +165,7 @@ func TestFiledata_Includes(t *testing.T) {
 }
 
 func TestFiledata_IncludesError(t *testing.T) {
-	_, err := wrapFiledata([]byte(`{"includes": "not array"}`))
+	_, err := testLoader.wrapFiledata([]byte(`{"includes": "not array"}`))
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not extract includes")
 }

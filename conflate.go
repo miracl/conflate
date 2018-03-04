@@ -8,11 +8,16 @@ import (
 type Conflate struct {
 	data   interface{}
 	schema interface{}
+	loader loader
 }
 
 // New constructs a new empty Conflate instance
 func New() *Conflate {
-	return &Conflate{}
+	return &Conflate{
+		loader: loader{
+			newFiledata: newFiledata,
+		},
+	}
 }
 
 // FromFiles constructs a new Conflate instance populated with the data from the given files
@@ -55,6 +60,15 @@ func FromGo(data ...interface{}) (*Conflate, error) {
 	return c, nil
 }
 
+// Expand is an option to automatically expand environment variables in data files
+func (c *Conflate) Expand(expand bool) {
+	if expand {
+		c.loader.newFiledata = newExpandedFiledata
+	} else {
+		c.loader.newFiledata = newFiledata
+	}
+}
+
 // AddFiles recursively merges the data from the given files into the Conflate instance
 func (c *Conflate) AddFiles(paths ...string) error {
 	urls, err := toURLs(nil, paths...)
@@ -66,7 +80,7 @@ func (c *Conflate) AddFiles(paths ...string) error {
 
 // AddURLs recursively merges the data from the given urls into the Conflate instance
 func (c *Conflate) AddURLs(urls ...url.URL) error {
-	data, err := loadURLsRecursive(nil, urls...)
+	data, err := c.loader.loadURLsRecursive(nil, urls...)
 	if err != nil {
 		return err
 	}
@@ -84,7 +98,7 @@ func (c *Conflate) AddGo(objs ...interface{}) error {
 
 // AddData recursively merges the given data into the Conflate instance
 func (c *Conflate) AddData(data ...[]byte) error {
-	fdata, err := wrapFiledatas(data...)
+	fdata, err := c.loader.wrapFiledatas(data...)
 	if err != nil {
 		return err
 	}
@@ -168,7 +182,7 @@ func (c *Conflate) MarshalSchema() ([]byte, error) {
 }
 
 func (c *Conflate) addData(fdata ...filedata) error {
-	fdata, err := loadDataRecursive(nil, fdata...)
+	fdata, err := c.loader.loadDataRecursive(nil, fdata...)
 	if err != nil {
 		return err
 	}

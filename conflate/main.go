@@ -23,10 +23,14 @@ func main() {
 	defaults := flag.Bool("defaults", false, "Apply defaults from schema to data")
 	validate := flag.Bool("validate", false, "Validate the data against the schema")
 	format := flag.String("format", "", "Output format of the data JSON/YAML/TOML")
+	expand := flag.Bool("expand", false, "Expand environment variables in files")
 
 	flag.Parse()
 
-	c, err := conflate.FromFiles(data...)
+	c := conflate.New()
+	c.Expand(*expand)
+
+	err := c.AddFiles(data...)
 	failIfError(err)
 
 	if *schema != "" {

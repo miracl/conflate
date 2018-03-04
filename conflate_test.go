@@ -4,6 +4,7 @@ import (
 	gocontext "context"
 	"github.com/stretchr/testify/assert"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
 )
@@ -43,6 +44,34 @@ func TestFromFiles_IncludesRemoved(t *testing.T) {
 	err = c.Unmarshal(&testData)
 	assert.Nil(t, err)
 	assert.Nil(t, testData["includes"])
+}
+
+func TestAddData_Expand(t *testing.T) {
+	c := New()
+	c.Expand(true)
+	os.Setenv("X", "123")
+	os.Setenv("Y", "str")
+	inJSON := []byte(`{ "x": $X, "y": "$Y"}`)
+	err := c.AddData(inJSON)
+	assert.Nil(t, err)
+	outJSON, err := c.MarshalJSON()
+	assert.Nil(t, err)
+	assert.Equal(t, `{"x":123,"y":"str"}
+`, string(outJSON))
+}
+
+func TestAddData_NoExpand(t *testing.T) {
+	c := New()
+	c.Expand(false)
+	os.Setenv("X", "123")
+	os.Setenv("Y", "str")
+	inJSON := []byte(`{ "x": "$X" }`)
+	err := c.AddData(inJSON)
+	assert.Nil(t, err)
+	outJSON, err := c.MarshalJSON()
+	assert.Nil(t, err)
+	assert.Equal(t, `{"x":"$X"}
+`, string(outJSON))
 }
 
 func TestFromFilesRemote(t *testing.T) {

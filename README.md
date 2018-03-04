@@ -8,7 +8,12 @@ _Library providing routines to merge and validate JSON, YAML and/or TOML files (
 
 ## Description
 
-Conflate is a library that helps to merge and validate data from multiple formats (JSON/YAML/TOML), and multiple locations (filesystem paths and urls).
+Conflate is a library that provides the following featues :
+
+* merge data from multiple formats (JSON/YAML/TOML) and multiple locations (filesystem paths and urls)
+* validate the merged data against a JSON schema
+* apply any default values defined in a JSON schema to the merged data
+* expand environment variables inside the data
 
 Data files can include other files using the `includes` array, meaning that they will be merged (i.e. in JSON this is simply a string array at the top-level). The `includes` array can support
 multiple path types (see below), including relative paths to local or remote files. Values present in the containing file override those from any file in the `includes` array, and values from any file in 
@@ -28,4 +33,4 @@ the `includes` array override those from files before it in the `includes` array
 
 ## Usage
 
-For basic usage refer to the [example](./example/main.go)
+For basic usage refer to the [example](./example/main.go), or use the [cli tool](./conflate)
