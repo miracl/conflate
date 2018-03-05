@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/miracl/conflate"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -18,7 +19,7 @@ func failIfError(err error) {
 func main() {
 
 	var data dataFlag
-	flag.Var(&data, "data", "The path/url of JSON/YAML/TOML data")
+	flag.Var(&data, "data", "The path/url of JSON/YAML/TOML data. or 'stdin' to read from standard input")
 	schema := flag.String("schema", "", "The path/url of a JSON v4 schema file")
 	defaults := flag.Bool("defaults", false, "Apply defaults from schema to data")
 	validate := flag.Bool("validate", false, "Validate the data against the schema")
@@ -30,24 +31,33 @@ func main() {
 	c := conflate.New()
 	c.Expand(*expand)
 
-	err := c.AddFiles(data...)
-	failIfError(err)
+	for _, d := range data {
+		if d == "stdin" {
+			b, err := ioutil.ReadAll(os.Stdin)
+			failIfError(err)
+			err = c.AddData(b)
+			failIfError(err)
+		} else {
+			err := c.AddFiles(d)
+			failIfError(err)
+		}
+	}
 
 	if *schema != "" {
-		err = c.SetSchemaFile(*schema)
+		err := c.SetSchemaFile(*schema)
 		failIfError(err)
 	}
 	if *defaults {
-		err = c.ApplyDefaults()
+		err := c.ApplyDefaults()
 		failIfError(err)
 	}
 	if *validate {
-		err = c.Validate()
+		err := c.Validate()
 		failIfError(err)
 	}
 	if *format != "" {
 		var data interface{}
-		err = c.Unmarshal(&data)
+		err := c.Unmarshal(&data)
 		failIfError(err)
 
 		var out []byte
