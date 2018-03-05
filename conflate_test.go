@@ -56,7 +56,10 @@ func TestAddData_Expand(t *testing.T) {
 	assert.Nil(t, err)
 	outJSON, err := c.MarshalJSON()
 	assert.Nil(t, err)
-	assert.Equal(t, `{"x":123,"y":"str"}
+	assert.Equal(t, `{
+  "x": 123,
+  "y": "str"
+}
 `, string(outJSON))
 }
 
@@ -70,7 +73,9 @@ func TestAddData_NoExpand(t *testing.T) {
 	assert.Nil(t, err)
 	outJSON, err := c.MarshalJSON()
 	assert.Nil(t, err)
-	assert.Equal(t, `{"x":"$X"}
+	assert.Equal(t, `{
+  "x": "$X"
+}
 `, string(outJSON))
 }
 
@@ -319,7 +324,7 @@ func TestConflate_MarshalJSON(t *testing.T) {
 	assert.Nil(t, err)
 	data, err := c.MarshalJSON()
 	assert.Nil(t, err)
-	assert.Equal(t, testMarshalJSON, data)
+	assert.Equal(t, string(testMarshalJSON), string(data))
 }
 
 func TestConflate_MarshalYAML(t *testing.T) {
