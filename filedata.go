@@ -47,7 +47,14 @@ func newFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
 }
 
 func newExpandedFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
-	expBytes := []byte(os.ExpandEnv(string(bytes)))
+	expBytes := []byte(os.Expand(string(bytes),
+		func(name string) string {
+			val, ok := os.LookupEnv(name)
+			if ok {
+				return val
+			}
+			return "$" + name
+		}))
 	return newFiledata(expBytes, url)
 }
 
