@@ -58,6 +58,7 @@ func jsonMarshal(data interface{}) ([]byte, error) {
 	buffer := bytes.Buffer{}
 	encoder := json.NewEncoder(&buffer)
 	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
 	err := encoder.Encode(data)
 	if err != nil {
 		return nil, wrapError(err, "The data could not be marshalled to json")

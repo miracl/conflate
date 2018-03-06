@@ -149,7 +149,9 @@ var (
 	testValue              = `value!£$%^&*()_+-={}[]:@~;'#<>?,./|`
 	testMarshalData        = map[string]interface{}{"key": testValue}
 	testMarshalDataInvalid = func() {}
-	testMarshalJSON        = []byte(`{"key":"` + testValue + `"}
+	testMarshalJSON        = []byte(`{
+  "key": "` + testValue + `"
+}
 `)
 	testMarshalYAML = []byte(`key: ` + testValue + `
 `)
