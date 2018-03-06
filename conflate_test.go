@@ -51,14 +51,15 @@ func TestAddData_Expand(t *testing.T) {
 	c.Expand(true)
 	os.Setenv("X", "123")
 	os.Setenv("Y", "str")
-	inJSON := []byte(`{ "x": $X, "y": "$Y"}`)
+	inJSON := []byte(`{ "x": $X, "y": "$Y", "z": "$Z"}`)
 	err := c.AddData(inJSON)
 	assert.Nil(t, err)
 	outJSON, err := c.MarshalJSON()
 	assert.Nil(t, err)
 	assert.Equal(t, `{
   "x": 123,
-  "y": "str"
+  "y": "str",
+  "z": "$Z"
 }
 `, string(outJSON))
 }
