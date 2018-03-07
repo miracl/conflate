@@ -182,6 +182,38 @@ func TestApplyDefaults_ObjectPropertyDefault(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{"val": 1}, data)
 }
 
+func TestApplyDefaults_ObjectPropertyNilMap(t *testing.T) {
+	var data map[string]interface{}
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"val": map[string]interface{}{
+				"type":    "integer",
+				"default": 1,
+			},
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}(nil), data)
+}
+
+func TestApplyDefaults_ObjectPropertyEmptyMap(t *testing.T) {
+	data := map[string]interface{}{}
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"val": map[string]interface{}{
+				"type":    "integer",
+				"default": 1,
+			},
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}{"val": 1}, data)
+}
+
 func TestApplyDefaults_ObjectPropertyDefaultNotApplied(t *testing.T) {
 	data := map[string]interface{}{"other": 1}
 	schema := map[string]interface{}{
@@ -292,6 +324,20 @@ func TestApplyDefaults_ArrayDefault(t *testing.T) {
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
 	assert.Equal(t, []interface{}{}, data)
+}
+
+func TestApplyDefaults_ArrayElementDefaultNil(t *testing.T) {
+	var data []interface{}
+	schema := map[string]interface{}{
+		"type": "array",
+		"items": map[string]interface{}{
+			"type":    "integer",
+			"default": 1,
+		},
+	}
+	err := applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, []interface{}(nil), data)
 }
 
 func TestApplyDefaults_ArrayElementDefault(t *testing.T) {

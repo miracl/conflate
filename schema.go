@@ -106,6 +106,9 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 		if !ok {
 			return makeContextError(ctx, "Node should be an 'object'")
 		}
+		if dataProps == nil {
+			return nil
+		}
 		var schemaProps map[string]interface{}
 		if props, ok := schemaNode["properties"]; ok {
 			schemaProps = props.(map[string]interface{})
