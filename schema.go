@@ -164,7 +164,6 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 
 var metaSchemaData = []byte(`
 {
-    "id": "http://json-schema.org/draft-04/schema#",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "description": "Core schema meta-schema",
     "definitions": {
