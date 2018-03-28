@@ -77,6 +77,15 @@ func mergeRecursive(ctx context, pToData interface{}, fromData interface{}) erro
 		if reflect.DeepEqual(toData, fromData) {
 			return nil
 		}
+
+		fromType := fromVal.Type()
+		toType := toVal.Type()
+		if toType.Kind() == reflect.Interface {
+			toType = toVal.Elem().Type()
+		}
+		if !fromType.AssignableTo(toType) {
+			return makeContextError(ctx, "The destination type (%v) must be the same as the source type (%v)", toType, fromType)
+		}
 		toVal.Set(fromVal)
 	}
 	return nil

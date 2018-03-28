@@ -34,6 +34,15 @@ func TestMerge(t *testing.T) {
 	testMergeCheck(t, merged, toData, fromData)
 }
 
+func TestMergeReversed(t *testing.T) {
+	toData := testMergeGetData(t, testMergeData2)
+	fromData := testMergeGetData(t, testMergeData1)
+	merged := testMergeGetData(t, testMergeData2)
+	err := merge(&merged, fromData)
+	assert.Nil(t, err)
+	testMergeCheck(t, merged, toData, fromData)
+}
+
 func TestMerge_SimpleString(t *testing.T) {
 	toData := "x"
 	fromData := "y"
@@ -135,6 +144,22 @@ func TestMerge_ToSliceInvalid(t *testing.T) {
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "destination value must be a []interface{}")
+}
+
+func TestMerge_IntToSliceInvalid(t *testing.T) {
+	fromData := 123
+	toData := make([]int, 0)
+	err := merge(&toData, fromData)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "The destination type ([]int) must be the same as the source type (int)")
+}
+
+func TestMerge_IntToMapInvalid(t *testing.T) {
+	fromData := 123
+	toData := make(map[string]int)
+	err := merge(&toData, fromData)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "The destination type (map[string]int) must be the same as the source type (int)")
 }
 
 func TestMerge_BadPropertyMerge(t *testing.T) {
@@ -285,8 +310,6 @@ var testMergeData1 = []byte(`
     "str2_to", 
     "str3_to"
   ]
-
-
 }
 `)
 
