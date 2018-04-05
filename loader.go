@@ -53,6 +53,9 @@ func (l *loader) loadDataRecursive(parentUrls []pkgurl.URL, data ...filedata) (f
 }
 
 func (l *loader) loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, data filedata) (filedatas, error) {
+	if data.isEmpty() {
+		return nil, nil
+	}
 	if containsURL(url, parentUrls) {
 		return nil, makeError("The url recursively includes itself (%v)", url)
 	}

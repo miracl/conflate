@@ -98,3 +98,7 @@ func (fds filedatas) objs() []interface{} {
 	}
 	return objs
 }
+
+func (fd *filedata) isEmpty() bool {
+	return fd == nil || fd.obj == nil
+}

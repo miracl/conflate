@@ -46,8 +46,8 @@ func mergeRecursive(ctx context, pToData interface{}, fromData interface{}) erro
 		if !ok {
 			return makeContextError(ctx, "The source value must be a map[string]interface{}")
 		}
-		toProps, ok := toData.(map[string]interface{})
-		if !ok {
+		toProps, _ := toData.(map[string]interface{})
+		if toProps == nil {
 			return makeContextError(ctx, "The destination value must be a map[string]interface{}")
 		}
 		for name, fromProp := range fromProps {
@@ -66,8 +66,8 @@ func mergeRecursive(ctx context, pToData interface{}, fromData interface{}) erro
 		if !ok {
 			return makeContextError(ctx, "The source value must be a []interface{}")
 		}
-		toItems, ok := toData.([]interface{})
-		if !ok {
+		toItems, _ := toData.([]interface{})
+		if toItems == nil {
 			return makeContextError(ctx, "The destination value must be a []interface{}")
 		}
 		toItems = append(toItems, fromItems...)

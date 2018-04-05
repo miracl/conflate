@@ -288,3 +288,39 @@ func TestLoadURLsRecursive(t *testing.T) {
 	assert.Contains(t, data[1].url.String(), "valid_sibling.json")
 	assert.Contains(t, data[2].url.String(), "valid_parent.json")
 }
+
+func TestLoadURLsRecursive_BlankChildYaml(t *testing.T) {
+	root, err := workingDir()
+	assert.Nil(t, err)
+	assert.NotNil(t, root)
+	url, err := toURL(root, "testdata/parent_blank.yaml")
+	assert.Nil(t, err)
+	assert.NotNil(t, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+}
+
+func TestLoadURLsRecursive_BlankChildJson(t *testing.T) {
+	root, err := workingDir()
+	assert.Nil(t, err)
+	assert.NotNil(t, root)
+	url, err := toURL(root, "testdata/parent_blank.json")
+	assert.Nil(t, err)
+	assert.NotNil(t, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+}
+
+func TestLoadURLsRecursive_BlankChildToml(t *testing.T) {
+	root, err := workingDir()
+	assert.Nil(t, err)
+	assert.NotNil(t, root)
+	url, err := toURL(root, "testdata/parent_blank.toml")
+	assert.Nil(t, err)
+	assert.NotNil(t, url)
+	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+}
