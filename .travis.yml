@@ -21,3 +21,25 @@ script:
   - go test -coverprofile .coverprofile
   - $GOPATH/bin/goveralls -v -coverprofile .coverprofile -service=travis-ci
 
+before_deploy:
+  - CGO_ENABLED=0 GOOS=linux go build -a -o releases/conflate  -ldflags "-s -w -X main.version=$TRAVIS_TAG" ./conflate
+  - tar -czf releases/conflate.linux-amd64.tar.gz -C releases conflate
+  - CGO_ENABLED=0 GOOS=darwin go build -a -o releases/conflate -ldflags "-s -w -X main.version=$TRAVIS_TAG" ./conflate
+  - tar -czf releases/conflate.darwin-amd64.tar.gz -C releases conflate
+  - CGO_ENABLED=0 GOOS=windows go build -a -o releases/conflate.exe -ldflags "-s -w -X main.version=$TRAVIS_TAG" ./conflate
+  - tar -czf releases/conflate.windows-amd64.tar.gz -C releases conflate.exe
+  - cd releases
+  - sha256sum *.tar.gz > sha256sum.txt
+  - cd ..
+
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN_KEY
+  file:
+    - "releases/conflate.linux-amd64.tar.gz"
+    - "releases/conflate.darwin-amd64.tar.gz"
+    - "releases/conflate.windows-amd64.tar.gz"
+    - "releases/sha256sum.txt"
+  skip_cleanup: true
+  on:
+    tags: true
