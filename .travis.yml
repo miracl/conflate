@@ -12,12 +12,12 @@ install:
   - go get honnef.co/go/tools/cmd/megacheck
 
 script:
-  - go vet ./...
   - test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"
-  - golint -set_exit_status ./...
-  - ineffassign ./
-  - megacheck -simple.exit-non-zero=true -staticcheck.exit-non-zero=true -unused.exit-non-zero=true ./
-  - megacheck -tests=false -simple.enabled=false -staticcheck.enabled=false -unused.exit-non-zero=true ./
+  - go vet ./ ./conflate ./example
+  - golint -set_exit_status ./ ./conflate ./example
+  - ineffassign ./ ./conflate ./example
+  - megacheck -simple.exit-non-zero=true -staticcheck.exit-non-zero=true -unused.exit-non-zero=true ./ ./conflate ./example
+  - megacheck -tests=false -simple.enabled=false -staticcheck.enabled=false -unused.exit-non-zero=true ./ ./conflate ./example
   - go test -coverprofile .coverprofile
   - $GOPATH/bin/goveralls -v -coverprofile .coverprofile -service=travis-ci
 
