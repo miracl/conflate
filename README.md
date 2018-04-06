@@ -1,6 +1,6 @@
 # CONFLATE
 
-_Library providing routines to merge and validate JSON, YAML and/or TOML files ([godoc](https://godoc.org/github.com/miracl/conflate))_
+_Library providing routines to merge and validate JSON, YAML, TOML files and/or structs ([godoc](https://godoc.org/github.com/miracl/conflate))_
 
 [![Build Status](https://secure.travis-ci.org/miracl/conflate.png?branch=master)](https://travis-ci.org/miracl/conflate?branch=master)
 [![Coverage Status](https://coveralls.io/repos/miracl/conflate/badge.svg?branch=master&service=github)](https://coveralls.io/github/miracl/conflate?branch=master)
