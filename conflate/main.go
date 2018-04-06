@@ -61,7 +61,7 @@ func main() {
 		failIfError(err)
 
 		var out []byte
-		switch *format {
+		switch strings.ToUpper(*format) {
 		case "JSON":
 			out, err = c.MarshalJSON()
 		case "YAML":
