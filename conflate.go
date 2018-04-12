@@ -4,6 +4,9 @@ import (
 	"net/url"
 )
 
+// Includes is used to specify the top level key that holds the includes array
+var Includes = "includes"
+
 // Conflate contains a 'working' merged data set and optionally a JSON v4 schema
 type Conflate struct {
 	data   interface{}

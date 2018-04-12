@@ -138,21 +138,21 @@ func TestFiledata_TOMLAsJSON(t *testing.T) {
 func TestFiledata_NoIncludes(t *testing.T) {
 	fd, err := testLoader.wrapFiledata([]byte(`{"x": 1}`))
 	assert.Nil(t, err)
-	assert.Nil(t, fd.obj["includes"])
+	assert.Nil(t, fd.obj[Includes])
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
 func TestFiledata_BlankIncludes(t *testing.T) {
 	fd, err := testLoader.wrapFiledata([]byte(`{"includes":[], "x": 1}`))
 	assert.Nil(t, err)
-	assert.Nil(t, fd.obj["includes"])
+	assert.Nil(t, fd.obj[Includes])
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
 func TestFiledata_NullIncludes(t *testing.T) {
 	fd, err := testLoader.wrapFiledata([]byte(`{"includes":null, "x": 1}`))
 	assert.Nil(t, err)
-	assert.Nil(t, fd.obj["includes"])
+	assert.Nil(t, fd.obj[Includes])
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
@@ -160,7 +160,7 @@ func TestFiledata_Includes(t *testing.T) {
 	fd, err := testLoader.wrapFiledata([]byte(`{"includes":["test1", "test2"], "x": 1}`))
 	assert.Nil(t, err)
 	assert.Equal(t, fd.includes, []string{"test1", "test2"})
-	assert.Nil(t, fd.obj["includes"])
+	assert.Nil(t, fd.obj[Includes])
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
@@ -177,4 +177,35 @@ func TestFiledatas_Unmarshal(t *testing.T) {
 		testFiledataNewAssert(t, testMarshalTOML, "file.toml"),
 	}
 	assert.Equal(t, fds.objs(), []interface{}{testMarshalData, testMarshalData, testMarshalData})
+}
+
+func TestFiledatas_DifferentIncludes(t *testing.T) {
+	old := Includes
+	Includes = "using"
+	defer func() { Includes = old }()
+	fd, err := testLoader.wrapFiledata([]byte(`{"using":["test1", "test2"], "x": 1}`))
+	assert.Nil(t, err)
+	assert.Equal(t, fd.includes, []string{"test1", "test2"})
+	assert.Nil(t, fd.obj[Includes])
+	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
+}
+
+func TestFiledatas_NoIncludes(t *testing.T) {
+	old := Includes
+	Includes = "using"
+	defer func() { Includes = old }()
+	fd, err := testLoader.wrapFiledata([]byte(`{"includes":["test1", "test2"]}`))
+	assert.Nil(t, err)
+	assert.Empty(t, fd.includes)
+	assert.Equal(t, fd.obj, map[string]interface{}{"includes": []interface{}{"test1", "test2"}})
+}
+
+func TestFiledatas_IgnoreIncludes(t *testing.T) {
+	old := Includes
+	Includes = ""
+	defer func() { Includes = old }()
+	fd, err := testLoader.wrapFiledata([]byte(`{"":["test1", "test2"]}`))
+	assert.Nil(t, err)
+	assert.Empty(t, fd.includes)
+	assert.Equal(t, fd.obj, map[string]interface{}{"": []interface{}{"test1", "test2"}})
 }
