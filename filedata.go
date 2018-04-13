@@ -47,15 +47,7 @@ func newFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
 }
 
 func newExpandedFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
-	expBytes := []byte(os.Expand(string(bytes),
-		func(name string) string {
-			val, ok := os.LookupEnv(name)
-			if ok {
-				return val
-			}
-			return "$" + name
-		}))
-	return newFiledata(expBytes, url)
+	return newFiledata(recursiveExpand(bytes), url)
 }
 
 func (fd *filedata) wrapError(err error) error {
@@ -101,4 +93,29 @@ func (fds filedatas) objs() []interface{} {
 
 func (fd *filedata) isEmpty() bool {
 	return fd == nil || fd.obj == nil
+}
+
+func recursiveExpand(b []byte) []byte {
+	const maxExpansions = 10
+	var c int
+	for i := 0; i < maxExpansions; i++ {
+		b, c = expand(b)
+		if c == 0 {
+			return b
+		}
+	}
+	return b
+}
+
+func expand(b []byte) ([]byte, int) {
+	var c int
+	return []byte(os.Expand(string(b),
+		func(name string) string {
+			val, ok := os.LookupEnv(name)
+			if ok {
+				c++
+				return val
+			}
+			return "$" + name
+		})), c
 }
