@@ -95,6 +95,13 @@ func (l *loader) wrapFiledatas(bytes ...[]byte) (filedatas, error) {
 }
 
 func loadURL(url pkgurl.URL) ([]byte, error) {
+	if url.Scheme == "file" {
+		// attempt to load locally handling case where we are loading from fifo etc
+		b, err := ioutil.ReadFile(url.Path)
+		if err == nil {
+			return b, nil
+		}
+	}
 	client := http.Client{Transport: newTransport()}
 	resp, err := client.Get(url.String())
 	if err != nil {
