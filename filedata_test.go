@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/stretchr/testify/assert"
 	pkgurl "net/url"
+	"os"
 	"testing"
 )
 
@@ -168,6 +169,25 @@ func TestFiledata_IncludesError(t *testing.T) {
 	_, err := testLoader.wrapFiledata([]byte(`{"includes": "not array"}`))
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not extract includes")
+}
+
+func TestFiledata_Expand(t *testing.T) {
+	w := os.Getenv("W")
+	x := os.Getenv("X")
+	y := os.Getenv("Y")
+	z := os.Getenv("Z")
+	os.Setenv("W", "$W")
+	os.Setenv("X", `"x"`)
+	os.Setenv("Y", `y`)
+	os.Setenv("Z", `$Y`)
+	defer func() {
+		os.Setenv("W", w)
+		os.Setenv("X", x)
+		os.Setenv("Y", y)
+		os.Setenv("Z", z)
+	}()
+	b := recursiveExpand([]byte(`{"W":"$W","X":$X,"Y":"$Y","Z":"$Z"}`))
+	assert.Equal(t, string(b), string(`{"W":"$W","X":"x","Y":"y","Z":"y"}`))
 }
 
 func TestFiledatas_Unmarshal(t *testing.T) {
