@@ -38,6 +38,10 @@ func main() {
 	c := conflate.New()
 	c.Expand(*expand)
 
+	if len(data) == 0 {
+		data = append(data, "stdin")
+	}
+
 	for _, d := range data {
 		if d == "stdin" {
 			b, err := ioutil.ReadAll(os.Stdin)
