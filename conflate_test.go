@@ -43,7 +43,7 @@ func TestFromFiles_IncludesRemoved(t *testing.T) {
 	var testData map[string]interface{}
 	err = c.Unmarshal(&testData)
 	assert.Nil(t, err)
-	assert.Nil(t, testData["includes"])
+	assert.Nil(t, testData[Includes])
 }
 
 func TestAddData_Expand(t *testing.T) {

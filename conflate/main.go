@@ -24,9 +24,16 @@ func main() {
 	defaults := flag.Bool("defaults", false, "Apply defaults from schema to data")
 	validate := flag.Bool("validate", false, "Validate the data against the schema")
 	format := flag.String("format", "", "Output format of the data JSON/YAML/TOML")
+	includes := flag.String("includes", "includes", "Name of includes array. Blank string suppresses expansion of includes arrays")
+	noincludes := flag.Bool("noincludes", false, "Switches off conflation of includes. Overrides any --includes setting.")
 	expand := flag.Bool("expand", false, "Expand environment variables in files")
 
 	flag.Parse()
+
+	conflate.Includes = *includes
+	if *noincludes {
+		conflate.Includes = ""
+	}
 
 	c := conflate.New()
 	c.Expand(*expand)

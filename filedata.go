@@ -75,11 +75,14 @@ func (fd *filedata) unmarshal() error {
 }
 
 func (fd *filedata) extractIncludes() error {
-	err := jsonMarshalUnmarshal(fd.obj["includes"], &fd.includes)
+	if Includes == "" {
+		return nil
+	}
+	err := jsonMarshalUnmarshal(fd.obj[Includes], &fd.includes)
 	if err != nil {
 		return wrapError(err, "Could not extract includes")
 	}
-	delete(fd.obj, "includes")
+	delete(fd.obj, Includes)
 	return nil
 }
 
