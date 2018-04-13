@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var version = "devel"
+
 func failIfError(err error) {
 	if err != nil {
 		fmt.Println(err)
@@ -27,8 +29,14 @@ func main() {
 	includes := flag.String("includes", "includes", "Name of includes array. Blank string suppresses expansion of includes arrays")
 	noincludes := flag.Bool("noincludes", false, "Switches off conflation of includes. Overrides any --includes setting.")
 	expand := flag.Bool("expand", false, "Expand environment variables in files")
+	showVersion := flag.Bool("version", false, "Display the version number")
 
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
 
 	conflate.Includes = *includes
 	if *noincludes {
