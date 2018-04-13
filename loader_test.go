@@ -324,3 +324,27 @@ func TestLoadURLsRecursive_BlankChildToml(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 }
+
+func testPath(t *testing.T, urlPath string, filePath string) {
+	assert.Equal(t, urlPath, setPath(filePath))
+	assert.Equal(t, filePath, getPath(urlPath))
+}
+
+func TestPath_Windows(t *testing.T) {
+	old := goos
+	goos = "windows"
+	defer func() { goos = old }()
+	testPath(t, `/C:/`, `C:\`)
+	testPath(t, `/C:/a`, `C:\a`)
+	testPath(t, `/C:/a/`, `C:\a\`)
+	testPath(t, `/C:/a`, `C:\a`)
+	testPath(t, `/C:/a/`, `C:\a\`)
+	testPath(t, `/c:/`, `c:\`)
+	testPath(t, `/c:/a`, `c:\a`)
+	testPath(t, `/c:/a/`, `c:\a\`)
+	testPath(t, `/c:/a`, `c:\a`)
+	testPath(t, `/c:/a/`, `c:\a\`)
+	testPath(t, `unc`, `\\unc`)
+	testPath(t, `unc/a`, `\\unc\a`)
+	testPath(t, `unc/a/`, `\\unc\a\`)
+}
