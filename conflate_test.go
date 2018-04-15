@@ -125,7 +125,7 @@ func TestFromFilesRemote(t *testing.T) {
 }
 
 func TestFromURLs(t *testing.T) {
-	url, err := toURL(nil, "testdata/valid_parent.json")
+	url, err := toURL(emptyURL, "testdata/valid_parent.json")
 	assert.Nil(t, err)
 	c, err := FromURLs(url)
 	assert.Nil(t, err)
@@ -133,7 +133,7 @@ func TestFromURLs(t *testing.T) {
 }
 
 func TestFromURLs_Error(t *testing.T) {
-	url, err := toURL(nil, "missing file")
+	url, err := toURL(emptyURL, "missing file")
 	assert.Nil(t, err)
 	c, err := FromURLs(url)
 	assert.NotNil(t, err)

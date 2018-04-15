@@ -1,17 +1,17 @@
 package conflate
 
 import (
-	pkgurl "net/url"
+	. "net/url"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 type filedata struct {
-	url      pkgurl.URL
+	include  include
 	bytes    []byte
 	obj      map[string]interface{}
-	includes []string
+	includes []include
 }
 
 type filedatas []filedata
@@ -36,29 +36,32 @@ var Unmarshallers = UnmarshallerMap{
 	"":      {JSONUnmarshal, YAMLUnmarshal, TOMLUnmarshal},
 }
 
-func newFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
-	fd := filedata{bytes: bytes, url: url}
+func newFiledata(bytes []byte, inc include) (filedata, error) {
+	fd := filedata{bytes: bytes, include: inc}
 	err := fd.unmarshal()
 	if err != nil {
-		return fd, fd.wrapError(err)
+		return filedata{}, fd.wrapError(err)
 	}
 	err = fd.extractIncludes()
-	return fd, fd.wrapError(err)
+	if err != nil {
+		return filedata{}, fd.wrapError(wrapError(err, "Could not extract includes"))
+	}
+	return fd, nil
 }
 
-func newExpandedFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
-	return newFiledata(recursiveExpand(bytes), url)
+func newExpandedFiledata(bytes []byte, inc include) (filedata, error) {
+	return newFiledata(recursiveExpand(bytes), inc)
 }
 
 func (fd *filedata) wrapError(err error) error {
-	if fd.url == emptyURL {
+	if fd.include.isEmpty() {
 		return err
 	}
-	return wrapError(err, "Error processing %v", fd.url.String())
+	return wrapError(err, "Error processing %v", fd.include.URL.String())
 }
 
 func (fd *filedata) unmarshal() error {
-	ext := strings.ToLower(filepath.Ext(fd.url.Path))
+	ext := strings.ToLower(filepath.Ext(fd.include.URL.Path))
 	unmarshallers, ok := Unmarshallers[ext]
 	if !ok {
 		unmarshallers = Unmarshallers[""]
@@ -74,14 +77,43 @@ func (fd *filedata) unmarshal() error {
 	return err
 }
 
+func unmarshalInclude(root URL, data []byte) (include, error) {
+	var path string
+	err := JSONUnmarshal(data, &path)
+	if err == nil {
+		return newIncludeFromPath(root, path)
+	}
+	var inc include
+	err = JSONUnmarshal(data, &inc)
+
+	return inc, err
+}
+
 func (fd *filedata) extractIncludes() error {
 	if Includes == "" {
 		return nil
 	}
-	err := jsonMarshalUnmarshal(fd.obj[Includes], &fd.includes)
-	if err != nil {
-		return wrapError(err, "Could not extract includes")
+	if fd.obj[Includes] == nil {
+		delete(fd.obj, Includes)
+		return nil
 	}
+	objs, ok := fd.obj[Includes].([]interface{})
+	if !ok {
+		return makeError("Includes must be an array")
+	}
+	var incs includes
+	for _, obj := range objs {
+		data, err := jsonMarshal(obj)
+		if err != nil {
+			return err
+		}
+		inc, err := unmarshalInclude(fd.include.URL, data)
+		if err != nil {
+			return err
+		}
+		incs = append(incs, inc)
+	}
+	fd.includes = incs
 	delete(fd.obj, Includes)
 	return nil
 }

@@ -1,7 +1,7 @@
 package conflate
 
 import (
-	"net/url"
+	. "net/url"
 )
 
 // Includes is used to specify the top level key that holds the includes array
@@ -34,7 +34,7 @@ func FromFiles(paths ...string) (*Conflate, error) {
 }
 
 // FromURLs constructs a new Conflate instance populated with the data from the given URLs
-func FromURLs(urls ...url.URL) (*Conflate, error) {
+func FromURLs(urls ...URL) (*Conflate, error) {
 	c := New()
 	err := c.AddURLs(urls...)
 	if err != nil {
@@ -74,7 +74,7 @@ func (c *Conflate) Expand(expand bool) {
 
 // AddFiles recursively merges the data from the given files into the Conflate instance
 func (c *Conflate) AddFiles(paths ...string) error {
-	urls, err := toURLs(nil, paths...)
+	urls, err := toURLs(emptyURL, paths...)
 	if err != nil {
 		return err
 	}
@@ -82,8 +82,9 @@ func (c *Conflate) AddFiles(paths ...string) error {
 }
 
 // AddURLs recursively merges the data from the given urls into the Conflate instance
-func (c *Conflate) AddURLs(urls ...url.URL) error {
-	data, err := c.loader.loadURLsRecursive(nil, urls...)
+func (c *Conflate) AddURLs(urls ...URL) error {
+	incs := newIncludesFromURLs(urls...)
+	data, err := c.loader.loadURLsRecursive(nil, incs...)
 	if err != nil {
 		return err
 	}
@@ -110,7 +111,7 @@ func (c *Conflate) AddData(data ...[]byte) error {
 
 // SetSchemaFile loads a JSON v4 schema from the given path
 func (c *Conflate) SetSchemaFile(path string) error {
-	url, err := toURL(nil, path)
+	url, err := toURL(emptyURL, path)
 	if err != nil {
 		return wrapError(err, "Failed to obtain url to schema file")
 	}
@@ -118,7 +119,7 @@ func (c *Conflate) SetSchemaFile(path string) error {
 }
 
 // SetSchemaURL loads a JSON v4 schema from the given URL
-func (c *Conflate) SetSchemaURL(url url.URL) error {
+func (c *Conflate) SetSchemaURL(url URL) error {
 	data, err := loadURL(url)
 	if err != nil {
 		return wrapError(err, "Failed to load schema file")

@@ -4,7 +4,7 @@ import (
 	gocontext "context"
 	"github.com/stretchr/testify/assert"
 	"net/http"
-	"net/url"
+	. "net/url"
 	"sync"
 	"testing"
 	"time"
@@ -18,9 +18,9 @@ func TestWorkingDir_NoRootPath(t *testing.T) {
 		return "", makeError("No root error")
 	}
 	defer func() { getwd = oldGetwd }()
-	url, err := workingDir()
+	url, err := workingURL()
 	assert.NotNil(t, err)
-	assert.Nil(t, url)
+	assert.Zero(t, url)
 }
 
 func TestWorkingDir_ParseError(t *testing.T) {
@@ -29,13 +29,13 @@ func TestWorkingDir_ParseError(t *testing.T) {
 		return "#^/\\^&%*&%", nil
 	}
 	defer func() { getwd = oldGetwd }()
-	url, err := workingDir()
+	url, err := workingURL()
 	assert.NotNil(t, err)
-	assert.Nil(t, url)
+	assert.Zero(t, url)
 }
 
 func TestWorkingDir(t *testing.T) {
-	url, err := workingDir()
+	url, err := workingURL()
 	assert.NotNil(t, url)
 	assert.Nil(t, err)
 }
@@ -43,49 +43,49 @@ func TestWorkingDir(t *testing.T) {
 // --------
 
 func TestToURL_Error(t *testing.T) {
-	url, err := toURL(&emptyURL, "\\^&%")
+	url, err := toURL(emptyURL, "\\^&%")
 	assert.NotNil(t, err)
 	assert.Equal(t, url, emptyURL)
 }
 
 func TestToURL_Blank(t *testing.T) {
-	_, err := toURL(nil, "")
+	_, err := toURL(emptyURL, "")
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The file path is blank")
 }
 
 func TestToURL_RelativePathCwd(t *testing.T) {
-	root, err := url.Parse("/home/username/service/")
+	root, err := Parse("/home/username/service/")
 	assert.Nil(t, err)
-	url, err := toURL(root, "../../fileName")
+	url, err := toURL(*root, "../../fileName")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Path, "/home/fileName")
 
-	url, err = toURL(root, "fileName")
+	url, err = toURL(*root, "fileName")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Path, "/home/username/service/fileName")
 
-	url, err = toURL(root, "./fileName")
+	url, err = toURL(*root, "./fileName")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Path, "/home/username/service/fileName")
 }
 
 func TestToURL_FullyQualifiedPath(t *testing.T) {
-	root, err := url.Parse("/no/matter/what/path")
+	root, err := Parse("/no/matter/what/path")
 	assert.Nil(t, err)
-	url, err := toURL(root, "/full/path/file")
+	url, err := toURL(*root, "/full/path/file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Path, "/full/path/file")
 }
 
 func TestToURL_FullyQualifiedFileUrl(t *testing.T) {
-	root, err := url.Parse("/no/matter/what/path")
+	root, err := Parse("/no/matter/what/path")
 	assert.Nil(t, err)
-	url, err := toURL(root, "file:/full/path/file")
+	url, err := toURL(*root, "file:/full/path/file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Path, "/full/path/file")
@@ -93,15 +93,15 @@ func TestToURL_FullyQualifiedFileUrl(t *testing.T) {
 }
 
 func TestToURL_FullyQualifiedHttpPath(t *testing.T) {
-	root, err := url.Parse("/no/matter/what/path/")
+	root, err := Parse("/no/matter/what/path/")
 	assert.Nil(t, err)
-	url, err := toURL(root, "http://www.some.url.com")
+	url, err := toURL(*root, "http://www.some.url.com")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Scheme, "http")
 	assert.Equal(t, url.Host, "www.some.url.com")
 
-	url, err = toURL(root, "http://www.some.url.com/file")
+	url, err = toURL(*root, "http://www.some.url.com/file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Scheme, "http")
@@ -110,16 +110,16 @@ func TestToURL_FullyQualifiedHttpPath(t *testing.T) {
 }
 
 func TestToURL_RelativeHttpUrl(t *testing.T) {
-	root, err := url.Parse("https://www.some.url.com/path/inside/")
+	root, err := Parse("https://www.some.url.com/path/inside/")
 	assert.Nil(t, err)
-	url, err := toURL(root, "./file")
+	url, err := toURL(*root, "./file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Scheme, "https")
 	assert.Equal(t, url.Host, "www.some.url.com")
 	assert.Equal(t, url.Path, "/path/inside/file")
 
-	url, err = toURL(root, "../file")
+	url, err = toURL(*root, "../file")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	assert.Equal(t, url.Scheme, "https")
@@ -130,15 +130,15 @@ func TestToURL_RelativeHttpUrl(t *testing.T) {
 // --------
 
 func TestToURLs_Error(t *testing.T) {
-	urls, err := toURLs(&emptyURL, "", "\\^&%")
+	urls, err := toURLs(emptyURL, "", "\\^&%")
 	assert.NotNil(t, err)
 	assert.Nil(t, urls)
 }
 
 func TestToURLs(t *testing.T) {
-	root, err := url.Parse("https://www.some.url.com/path/inside/")
+	root, err := Parse("https://www.some.url.com/path/inside/")
 	assert.Nil(t, err)
-	urls, err := toURLs(root, "./one", "../two", "three")
+	urls, err := toURLs(*root, "./one", "../two", "three")
 	assert.Nil(t, err)
 	assert.NotNil(t, urls)
 	assert.Equal(t, len(urls), 3)
@@ -156,7 +156,7 @@ func TestToURLs(t *testing.T) {
 // --------
 
 func TestLoadURLError(t *testing.T) {
-	data, err := loadURL(url.URL{})
+	data, err := loadURL(URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
@@ -192,7 +192,7 @@ func TestLoadURL(t *testing.T) {
 	shutdown := testServer()
 	defer shutdown()
 	testWaitForURL(t, "http://0.0.0.0:9999")
-	url, err := url.Parse("http://0.0.0.0:9999/valid_parent.json")
+	url, err := Parse("http://0.0.0.0:9999/valid_parent.json")
 	assert.Nil(t, err)
 	data, err := loadURL(*url)
 	assert.Nil(t, err)
@@ -201,7 +201,7 @@ func TestLoadURL(t *testing.T) {
 }
 
 func TestLoadURL_Relative(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	url, err := toURL(root, "./testdata/valid_parent.json")
 	assert.Nil(t, err)
@@ -216,29 +216,29 @@ func TestLoadURL_Relative(t *testing.T) {
 var testLoader = loader{newFiledata: newFiledata}
 
 func TestLoadURLsRecursive_LoadError(t *testing.T) {
-	data, err := testLoader.loadURLsRecursive(nil, url.URL{})
+	data, err := testLoader.loadURLsRecursive(nil, emptyInclude)
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
 
 func TestLoadURLsRecursive_IncludesError(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "loader.go")
+	inc, err := newIncludeFromPath(root, "loader.go")
 	assert.Nil(t, err)
-	assert.NotNil(t, url)
-	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.NotZero(t, inc)
+	data, err := testLoader.loadURLsRecursive(nil, inc)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not unmarshal")
 	assert.Nil(t, data)
 }
 
 func TestLoadURLsRecursive_BadUrlInInclude(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "testdata/bad_url_in_include.json")
+	url, err := newIncludeFromPath(root, "testdata/bad_url_in_include.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, url)
 	data, err := testLoader.loadURLsRecursive(nil, url)
@@ -248,79 +248,79 @@ func TestLoadURLsRecursive_BadUrlInInclude(t *testing.T) {
 }
 
 func TestLoadURLsRecursive_MissingFileInInclude(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "testdata/missing_file_in_include.json")
+	inc, err := newIncludeFromPath(root, "testdata/missing_file_in_include.json")
 	assert.Nil(t, err)
-	assert.NotNil(t, url)
-	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.NotZero(t, inc)
+	data, err := testLoader.loadURLsRecursive(nil, inc)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Failed to load url")
 	assert.Nil(t, data)
 }
 
 func TestLoadURLsRecursive_RecursiveInclude(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "testdata/recursive_include_parent.json")
+	inc, err := newIncludeFromPath(root, "testdata/recursive_include_parent.json")
 	assert.Nil(t, err)
-	assert.NotNil(t, url)
-	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.NotZero(t, inc)
+	data, err := testLoader.loadURLsRecursive(nil, inc)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The url recursively includes itself")
 	assert.Nil(t, data)
 }
 
 func TestLoadURLsRecursive(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "testdata/valid_parent.json")
+	inc, err := newIncludeFromPath(root, "testdata/valid_parent.json")
 	assert.Nil(t, err)
-	assert.NotNil(t, url)
-	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.NotZero(t, inc)
+	data, err := testLoader.loadURLsRecursive(nil, inc)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.Equal(t, 3, len(data))
-	assert.Contains(t, data[0].url.String(), "valid_child.json")
-	assert.Contains(t, data[1].url.String(), "valid_sibling.json")
-	assert.Contains(t, data[2].url.String(), "valid_parent.json")
+	assert.Contains(t, data[0].include.URL.String(), "valid_child.json")
+	assert.Contains(t, data[1].include.URL.String(), "valid_sibling.json")
+	assert.Contains(t, data[2].include.URL.String(), "valid_parent.json")
 }
 
 func TestLoadURLsRecursive_BlankChildYaml(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "testdata/parent_blank.yaml")
+	inc, err := newIncludeFromPath(root, "testdata/parent_blank.yaml")
 	assert.Nil(t, err)
-	assert.NotNil(t, url)
-	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.NotNil(t, inc)
+	data, err := testLoader.loadURLsRecursive(nil, inc)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 }
 
 func TestLoadURLsRecursive_BlankChildJson(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "testdata/parent_blank.json")
+	inc, err := newIncludeFromPath(root, "testdata/parent_blank.json")
 	assert.Nil(t, err)
-	assert.NotNil(t, url)
-	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.NotZero(t, inc)
+	data, err := testLoader.loadURLsRecursive(nil, inc)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 }
 
 func TestLoadURLsRecursive_BlankChildToml(t *testing.T) {
-	root, err := workingDir()
+	root, err := workingURL()
 	assert.Nil(t, err)
 	assert.NotNil(t, root)
-	url, err := toURL(root, "testdata/parent_blank.toml")
+	inc, err := newIncludeFromPath(root, "testdata/parent_blank.toml")
 	assert.Nil(t, err)
-	assert.NotNil(t, url)
-	data, err := testLoader.loadURLsRecursive(nil, url)
+	assert.NotZero(t, inc)
+	data, err := testLoader.loadURLsRecursive(nil, inc)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 }
