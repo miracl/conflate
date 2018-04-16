@@ -53,10 +53,31 @@ func convertJSONContext(jsonCtx string) context {
 }
 
 func applyDefaults(pData interface{}, schema interface{}) error {
-	return applyDefaultsRecursive(rootContext(), pData, schema)
+	return applyDefaultsRecursive(rootContext(), schema, pData, schema)
 }
 
-func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) error {
+func lookupSchema(schema interface{}, ref string) (interface{}, error) {
+	ref = strings.Trim(ref, "/")
+	parts := strings.Split(ref, "/")
+	if len(parts) == 0 || parts[0] != "#" {
+		return nil, makeError("Reference must start with root (#) '%v'", ref)
+	}
+	parts = parts[1:]
+	subSchema := schema
+	for _, part := range parts {
+		m, ok := subSchema.(map[string]interface{})
+		if !ok || m == nil {
+			return nil, makeError("Referenced schema is not a map '%v'", ref)
+		}
+		subSchema = m[part]
+		if subSchema == nil {
+			return nil, makeError("Referenced schema is not found '%v' in  '%v'", part, ref)
+		}
+	}
+	return subSchema, nil
+}
+
+func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface{}, schema interface{}) error {
 	if pData == nil {
 		return makeContextError(ctx, "Destination value must not be nil")
 	}
@@ -70,6 +91,19 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 	schemaNode, ok := schema.(map[string]interface{})
 	if !ok {
 		return makeContextError(ctx, "Schema section is not a map")
+	}
+
+	val, ok := schemaNode["$ref"]
+	if ok {
+		ref, ok := val.(string)
+		if !ok {
+			return makeContextError(ctx, "Invalid reference")
+		}
+		schema, err := lookupSchema(rootSchema, ref)
+		if err != nil {
+			return makeContextError(ctx, err.Error())
+		}
+		return applyDefaultsRecursive(ctx.add(ref), rootSchema, pData, schema)
 	}
 
 	for k := range schemaNode {
@@ -114,7 +148,7 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 			schemaProps = props.(map[string]interface{})
 			for name, schemaProp := range schemaProps {
 				dataProp := dataProps[name]
-				err := applyDefaultsRecursive(ctx.add(name), &dataProp, schemaProp)
+				err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, schemaProp)
 				if err != nil {
 					return wrapError(err, "Failed to apply defaults to object property")
 				}
@@ -127,7 +161,7 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 			if addProps, ok = addProps.(map[string]interface{}); ok {
 				for name, dataProp := range dataProps {
 					if schemaProps == nil || schemaProps[name] == nil {
-						err := applyDefaultsRecursive(ctx.add(name), &dataProp, addProps)
+						err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, addProps)
 						if err != nil {
 							return wrapError(err, "Failed to apply defaults to additional object property")
 						}
@@ -149,7 +183,7 @@ func applyDefaultsRecursive(ctx context, pData interface{}, schema interface{}) 
 		if items, ok := schemaNode["items"]; ok {
 			schemaItem := items.(map[string]interface{})
 			for i, dataItem := range dataItems {
-				err := applyDefaultsRecursive(ctx.addInt(i), &dataItem, schemaItem)
+				err := applyDefaultsRecursive(ctx.addInt(i), rootSchema, &dataItem, schemaItem)
 				if err != nil {
 					return wrapError(err, "Failed to apply defaults to array item")
 				}
