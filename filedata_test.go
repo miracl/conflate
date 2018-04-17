@@ -151,10 +151,9 @@ func TestFiledata_BlankIncludes(t *testing.T) {
 }
 
 func TestFiledata_NullIncludes(t *testing.T) {
-	fd, err := testLoader.wrapFiledata([]byte(`{"includes":null, "x": 1}`))
-	assert.Nil(t, err)
-	assert.Nil(t, fd.obj[Includes])
-	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
+	_, err := testLoader.wrapFiledata([]byte(`{"includes":null}`))
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "not valid against the schema")
 }
 
 func TestFiledata_Includes(t *testing.T) {
@@ -165,10 +164,19 @@ func TestFiledata_Includes(t *testing.T) {
 	assert.Equal(t, fd.obj, map[string]interface{}{"x": 1.0})
 }
 
-func TestFiledata_IncludesError(t *testing.T) {
+func TestFiledata_ExtractError(t *testing.T) {
+	old := getSchema
+	getSchema = func() map[string]interface{} { return map[string]interface{}{} }
+	defer func() { getSchema = old }()
 	_, err := testLoader.wrapFiledata([]byte(`{"includes": "not array"}`))
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not extract includes")
+}
+
+func TestFiledata_IncludesError(t *testing.T) {
+	_, err := testLoader.wrapFiledata([]byte(`{"includes": "not array"}`))
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "not valid against the schema")
 }
 
 func TestFiledata_Expand(t *testing.T) {
