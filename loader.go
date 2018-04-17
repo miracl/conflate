@@ -6,11 +6,18 @@ import (
 	"net/http"
 	pkgurl "net/url"
 	"os"
+	"regexp"
+	"runtime"
+	"strings"
 	"time"
 )
 
-var emptyURL = pkgurl.URL{}
-var getwd = os.Getwd
+var (
+	goos        = runtime.GOOS
+	emptyURL    = pkgurl.URL{}
+	getwd       = os.Getwd
+	driveLetter = regexp.MustCompile(`^[A-Za-z]:.*$`)
+)
 
 type loader struct {
 	newFiledata func([]byte, pkgurl.URL) (filedata, error)
@@ -97,7 +104,7 @@ func (l *loader) wrapFiledatas(bytes ...[]byte) (filedatas, error) {
 func loadURL(url pkgurl.URL) ([]byte, error) {
 	if url.Scheme == "file" {
 		// attempt to load locally handling case where we are loading from fifo etc
-		b, err := ioutil.ReadFile(url.Path)
+		b, err := ioutil.ReadFile(getPath(url.Path))
 		if err == nil {
 			return b, nil
 		}
@@ -155,7 +162,7 @@ func toURL(rootURL *pkgurl.URL, path string) (pkgurl.URL, error) {
 			return emptyURL, err
 		}
 	}
-	url, err := pkgurl.Parse(path)
+	url, err := pkgurl.Parse(setPath(path))
 	if err != nil {
 		return emptyURL, wrapError(err, "Could not parse path")
 	}
@@ -183,9 +190,33 @@ func workingDir() (*pkgurl.URL, error) {
 	if err != nil {
 		return nil, err
 	}
-	rootURL, err := pkgurl.Parse("file://" + rootPath + "/")
+	rootURL, err := pkgurl.Parse("file://" + setPath(rootPath) + "/")
 	if err != nil {
 		return nil, err
 	}
 	return rootURL, nil
+}
+
+func setPath(path string) string {
+	if goos == "windows" {
+		// https://blogs.msdn.microsoft.com/ie/2006/12/06/file-uris-in-windows/
+		path = strings.Replace(path, `\`, `/`, -1)
+		path = strings.TrimLeft(path, `/`)
+		if driveLetter.MatchString(path) {
+			path = `/` + path
+		}
+	}
+	return path
+}
+
+func getPath(path string) string {
+	if goos == "windows" {
+		// https://blogs.msdn.microsoft.com/ie/2006/12/06/file-uris-in-windows/
+		path = strings.TrimLeft(path, `/`)
+		if !driveLetter.MatchString(path) {
+			path = `//` + path
+		}
+		path = strings.Replace(path, `/`, `\`, -1)
+	}
+	return path
 }
