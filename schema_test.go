@@ -473,6 +473,94 @@ func TestApplyDefaults_MissingIntFields(t *testing.T) {
 	assert.Equal(t, 1.0, arrObj["int"])
 }
 
+func TestApplyDefaults_Ref(t *testing.T) {
+	var schemaData = []byte(`
+	{
+		"type": "object",
+		"definitions": {
+			"int": { "type": "integer", "default": 1 }
+		},
+		"properties": {
+			"int": { "$ref": "#/definitions/int" },
+			"obj": { "$ref": "#" }
+		}
+	}`)
+	var rawData = []byte(` { "int": null, "obj": { "int": null} }`)
+
+	var data map[string]interface{}
+	err := JSONUnmarshal(rawData, &data)
+	assert.Nil(t, err)
+	var schema interface{}
+	err = JSONUnmarshal(schemaData, &schema)
+	assert.Nil(t, err)
+	err = applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}{"int": 1.0, "obj": map[string]interface{}{"int": 1.0}}, data)
+}
+
+func TestApplyDefaults_RefNotStringError(t *testing.T) {
+	var schemaData = []byte(`
+	{
+		"type": "object",
+		"properties": {
+			"int": { "$ref": {} }
+		}
+	}`)
+	var rawData = []byte(` { "int": 123 }`)
+
+	var data map[string]interface{}
+	err := JSONUnmarshal(rawData, &data)
+	assert.Nil(t, err)
+	var schema interface{}
+	err = JSONUnmarshal(schemaData, &schema)
+	assert.Nil(t, err)
+	err = applyDefaults(&data, schema)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Reference is not a string")
+}
+
+func TestApplyDefaults_RefInvalidError(t *testing.T) {
+	var schemaData = []byte(`
+	{
+		"type": "object",
+		"properties": {
+			"int": { "$ref": "://x/y" }
+		}
+	}`)
+	var rawData = []byte(` { "int": 123 }`)
+
+	var data map[string]interface{}
+	err := JSONUnmarshal(rawData, &data)
+	assert.Nil(t, err)
+	var schema interface{}
+	err = JSONUnmarshal(schemaData, &schema)
+	assert.Nil(t, err)
+	err = applyDefaults(&data, schema)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Invalid reference")
+}
+
+func TestApplyDefaults_RefPointerError(t *testing.T) {
+	var schemaData = []byte(`
+	{
+		"type": "object",
+		"properties": {
+			"int": { "$ref": "#/missing" }
+		}
+	}`)
+	var rawData = []byte(` { "int": 123 }`)
+
+	var data map[string]interface{}
+	err := JSONUnmarshal(rawData, &data)
+	assert.Nil(t, err)
+	var schema interface{}
+	err = JSONUnmarshal(schemaData, &schema)
+	assert.Nil(t, err)
+	err = applyDefaults(&data, schema)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Cannot find reference")
+}
+
 // -----------
 
 var testSchemaData = []byte(`
