@@ -9,10 +9,12 @@ import (
 
 type filedata struct {
 	url      pkgurl.URL
-	bytes    []byte
+	data     []byte
 	obj      map[string]interface{}
 	includes []string
 }
+
+var emptyFiledata = filedata{}
 
 type filedatas []filedata
 
@@ -36,18 +38,25 @@ var Unmarshallers = UnmarshallerMap{
 	"":      {JSONUnmarshal, YAMLUnmarshal, TOMLUnmarshal},
 }
 
-func newFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
-	fd := filedata{bytes: bytes, url: url}
+func newFiledata(data []byte, url pkgurl.URL) (filedata, error) {
+	fd := filedata{data: data, url: url}
 	err := fd.unmarshal()
 	if err != nil {
-		return fd, fd.wrapError(err)
+		return emptyFiledata, err
+	}
+	err = fd.validate()
+	if err != nil {
+		return emptyFiledata, err
 	}
 	err = fd.extractIncludes()
-	return fd, fd.wrapError(err)
+	if err != nil {
+		return emptyFiledata, err
+	}
+	return fd, nil
 }
 
-func newExpandedFiledata(bytes []byte, url pkgurl.URL) (filedata, error) {
-	return newFiledata(recursiveExpand(bytes), url)
+func newExpandedFiledata(data []byte, url pkgurl.URL) (filedata, error) {
+	return newFiledata(recursiveExpand(data), url)
 }
 
 func (fd *filedata) wrapError(err error) error {
@@ -55,6 +64,10 @@ func (fd *filedata) wrapError(err error) error {
 		return err
 	}
 	return wrapError(err, "Error processing %v", fd.url.String())
+}
+
+func (fd *filedata) validate() error {
+	return fd.wrapError(validate(fd.obj, getSchema()))
 }
 
 func (fd *filedata) unmarshal() error {
@@ -65,7 +78,7 @@ func (fd *filedata) unmarshal() error {
 	}
 	err := makeError("Could not unmarshal data")
 	for _, unmarshal := range unmarshallers {
-		uerr := unmarshal(fd.bytes, &fd.obj)
+		uerr := unmarshal(fd.data, &fd.obj)
 		if uerr == nil {
 			return nil
 		}
