@@ -561,6 +561,46 @@ func TestApplyDefaults_RefPointerError(t *testing.T) {
 	assert.Contains(t, err.Error(), "Cannot find reference")
 }
 
+func TestApplyDefaults_OneOfWithValidType(t *testing.T) {
+	var schemaData = []byte(`
+	{
+    "type": "object",
+    "properties": {
+      "obj1": {
+        "type": "object",
+        "properties": {
+          "prop1": {
+            "type": "string",
+            "default": "val1"
+          }
+        }
+      }
+    },
+    "oneOf": [
+      { "required": ["obj1"] }
+    ]
+	}`)
+	var rawData = []byte(`{ "obj1": {} }`)
+	var expData = []byte(`{
+  "obj1": {
+    "prop1": "val1"
+  }
+}
+`)
+
+	var data map[string]interface{}
+	err := JSONUnmarshal(rawData, &data)
+	assert.Nil(t, err)
+	var schema interface{}
+	err = JSONUnmarshal(schemaData, &schema)
+	assert.Nil(t, err)
+	err = applyDefaults(&data, schema)
+	assert.Nil(t, err)
+	outData, err := jsonMarshal(data)
+	assert.Nil(t, err)
+	assert.Equal(t, string(expData), string(outData))
+}
+
 // -----------
 
 var testSchemaData = []byte(`

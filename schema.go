@@ -113,22 +113,22 @@ func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface
 		return applyDefaultsRecursive(ctx.add(ref), rootSchema, pData, subSchema)
 	}
 
-	for k := range schemaNode {
-		switch k {
-		case "anyOf":
-			fallthrough
-		case "allOf":
-			fallthrough
-		case "oneOf":
-			fallthrough
-		case "notOf":
-			// we do not support setting defaults in these structures, so we return without error
-			return nil
-		}
-	}
-
 	schemaType, ok := schemaNode["type"]
 	if !ok {
+
+		for k := range schemaNode {
+			switch k {
+			case "anyOf":
+				fallthrough
+			case "allOf":
+				fallthrough
+			case "oneOf":
+				fallthrough
+			case "notOf":
+				// the schema is valid so it is not an error, but we do not support these types of schema yet
+				return nil
+			}
+		}
 		return makeContextError(ctx, "Schema section does not have a valid 'type' attribute")
 	}
 
