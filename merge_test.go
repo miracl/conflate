@@ -183,57 +183,9 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 
 	switch mergedVal.Kind() {
 	case reflect.Map:
-		var mergedMap, data1Map, data2Map map[string]interface{}
-		if merged != nil {
-			mergedMap = merged.(map[string]interface{})
-		}
-		if data1 != nil {
-			data1Map = data1.(map[string]interface{})
-		}
-		if data2 != nil {
-			data2Map = data2.(map[string]interface{})
-		}
-		for name, mergedItem := range mergedMap {
-			var data1Item, data2Item interface{}
-			if data1Map != nil {
-				data1Item = data1Map[name]
-			}
-			if data2Map != nil {
-				data2Item = data2Map[name]
-			}
-			//t.Logf("%v : %v : %v : %v", name, mergedItem, data1Item, data2Item)
-			testMergeCheck(t, mergedItem, data1Item, data2Item)
-		}
+		testMergeCheckMap(t, merged, data1, data2)
 	case reflect.Slice:
-		var mergedArr, data1Arr, data2Arr []interface{}
-		if merged != nil {
-			mergedArr = merged.([]interface{})
-		}
-		if data1 != nil {
-			data1Arr = data1.([]interface{})
-		}
-		if data2 != nil {
-			data2Arr = data2.([]interface{})
-		}
-
-		//t.Logf("%v : %v : %v", mergedArr, data1Arr, data2Arr)
-		//t.Logf("%v : %v : %v", len(mergedArr), len(data1Arr), len(data2Arr))
-
-		assert.Equal(t, len(data1Arr)+len(data2Arr), len(mergedArr))
-		data1Pad := make([]interface{}, len(data2Arr))
-		data2Pad := make([]interface{}, len(data1Arr))
-		data1Arr = append(data1Arr, data1Pad...)
-		data2Arr = append(data2Pad, data2Arr...)
-		assert.Equal(t, len(data1Arr), len(mergedArr))
-		assert.Equal(t, len(data2Arr), len(mergedArr))
-
-		for i, mergedItem := range mergedArr {
-			data1Item := data1Arr[i]
-			data2Item := data2Arr[i]
-			//t.Logf("%v : %v : %v : %v", i, mergedItem, data1Item, data2Item)
-			testMergeCheck(t, mergedItem, data1Item, data2Item)
-		}
-
+		testMergeCheckSlice(t, merged, data1, data2)
 	default:
 		if data1 == nil && data2 != nil {
 			assert.Equal(t, data2, merged)
@@ -244,6 +196,56 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 		} else {
 			assert.Nil(t, merged)
 		}
+	}
+}
+
+func testMergeCheckMap(t *testing.T, merged, data1, data2 interface{}) {
+	var mergedMap, data1Map, data2Map map[string]interface{}
+	if merged != nil {
+		mergedMap = merged.(map[string]interface{})
+	}
+	if data1 != nil {
+		data1Map = data1.(map[string]interface{})
+	}
+	if data2 != nil {
+		data2Map = data2.(map[string]interface{})
+	}
+	for name, mergedItem := range mergedMap {
+		var data1Item, data2Item interface{}
+		if data1Map != nil {
+			data1Item = data1Map[name]
+		}
+		if data2Map != nil {
+			data2Item = data2Map[name]
+		}
+		testMergeCheck(t, mergedItem, data1Item, data2Item)
+	}
+}
+
+func testMergeCheckSlice(t *testing.T, merged, data1, data2 interface{}) {
+	var mergedArr, data1Arr, data2Arr []interface{}
+	if merged != nil {
+		mergedArr = merged.([]interface{})
+	}
+	if data1 != nil {
+		data1Arr = data1.([]interface{})
+	}
+	if data2 != nil {
+		data2Arr = data2.([]interface{})
+	}
+
+	assert.Equal(t, len(data1Arr)+len(data2Arr), len(mergedArr))
+	data1Pad := make([]interface{}, len(data2Arr))
+	data2Pad := make([]interface{}, len(data1Arr))
+	data1Arr = append(data1Arr, data1Pad...)
+	data2Arr = append(data2Pad, data2Arr...)
+	assert.Equal(t, len(data1Arr), len(mergedArr))
+	assert.Equal(t, len(data2Arr), len(mergedArr))
+
+	for i, mergedItem := range mergedArr {
+		data1Item := data1Arr[i]
+		data2Item := data2Arr[i]
+		testMergeCheck(t, mergedItem, data1Item, data2Item)
 	}
 }
 
