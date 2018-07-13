@@ -21,7 +21,7 @@ func failIfError(err error) {
 func main() {
 
 	var data dataFlag
-	flag.Var(&data, "data", "The path/url of JSON/YAML/TOML data. or 'stdin' to read from standard input")
+	flag.Var(&data, "data", "The path/url of JSON/YAML/TOML data, or 'stdin' to read from standard input")
 	schema := flag.String("schema", "", "The path/url of a JSON v4 schema file")
 	defaults := flag.Bool("defaults", false, "Apply defaults from schema to data")
 	validate := flag.Bool("validate", false, "Validate the data against the schema")
