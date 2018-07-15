@@ -1,3 +1,5 @@
+<p align="center"><img src="gophers.png" alt="gophers" style="width: 50%; height: 50%"></p>
+
 # CONFLATE
 
 _Library providing routines to merge and validate JSON, YAML, TOML files and/or structs ([godoc](https://godoc.org/github.com/miracl/conflate))_
@@ -220,3 +222,7 @@ $echo '{ "my_value": "$MYVALUE", "my_map": $MYJSONMAP }' | conflate -data stdin 
   "my_value": "some value"
 }
 ```
+
+# Acknowledgements
+
+Images derived from originals by Renee French https://golang.org/doc/gopher/
