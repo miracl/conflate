@@ -9,6 +9,42 @@ import (
 
 var metaSchema interface{}
 
+type schema struct {
+	schema interface{}
+}
+
+func newSchema(data []byte) (*schema, error) {
+	var s interface{}
+	err := JSONUnmarshal(data, &s)
+	if err != nil {
+		return nil, wrapError(err, "Schema is not valid json")
+	}
+	err = validateSchema(s)
+	if err != nil {
+		return nil, wrapError(err, "The schema is not valid against the meta-schema http://json-schema.org/draft-04/schema")
+	}
+	return &schema{
+			schema: s,
+		},
+		err
+}
+
+func (s *schema) Validate(data interface{}) error {
+	if s == nil {
+		return makeError("Schema is not set")
+	}
+	err := validate(data, s.schema)
+	return wrapError(err, "Schema validation failed")
+}
+
+func (s *schema) ApplyDefaults(data *interface{}) error {
+	if s == nil {
+		return makeError("Schema is not set")
+	}
+	err := applyDefaults(data, s.schema)
+	return wrapError(err, "The defaults could not be applied")
+}
+
 func validateSchema(schema interface{}) error {
 	if metaSchema == nil {
 		err := JSONUnmarshal(metaSchemaData, &metaSchema)
