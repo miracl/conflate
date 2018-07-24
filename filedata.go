@@ -135,3 +135,26 @@ func expand(b []byte) ([]byte, int) {
 			return "$" + name
 		})), c
 }
+
+var getSchema = getDefaultSchema
+
+func getDefaultSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"anyOf": []interface{}{
+			map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					Includes: map[string]interface{}{
+						"type": "array",
+						"items": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+			},
+			map[string]interface{}{
+				"type": "null",
+			},
+		},
+	}
+}
