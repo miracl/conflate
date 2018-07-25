@@ -5,6 +5,37 @@ import (
 	"testing"
 )
 
+func TestSchema_NewSchemaBadUrl(t *testing.T) {
+	_, err := NewSchemaFile(`!"£$%^&*()`)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Failed to obtain url to schema file")
+}
+
+func TestSchema_NewSchemaMissingError(t *testing.T) {
+	_, err := NewSchemaFile("missing file")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Failed to load schema url")
+}
+
+func TestSchema_NewSchemaBadJsonError(t *testing.T) {
+	_, err := NewSchemaFile("conflate.go")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Schema is not valid json")
+}
+
+func TestSchema_NewSchemaBadSchemaError(t *testing.T) {
+	_, err := NewSchemaFile("testdata/bad.schema.json")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "The schema is not valid against the meta-schema")
+}
+
+func TestSchema_NewSchema(t *testing.T) {
+	s, err := NewSchemaFile("testdata/test.schema.json")
+	assert.Nil(t, err)
+	assert.NotNil(t, s)
+	assert.NotNil(t, s.s)
+}
+
 func TestValidateSchema(t *testing.T) {
 	metaSchema = nil
 	data := `{"title": "test"}`

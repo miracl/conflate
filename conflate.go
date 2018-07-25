@@ -10,7 +10,6 @@ var Includes = "includes"
 // Conflate contains a 'working' merged data set and optionally a JSON v4 schema
 type Conflate struct {
 	data   interface{}
-	schema interface{}
 	loader loader
 }
 
@@ -108,55 +107,14 @@ func (c *Conflate) AddData(data ...[]byte) error {
 	return c.addData(fdata...)
 }
 
-// SetSchemaFile loads a JSON v4 schema from the given path
-func (c *Conflate) SetSchemaFile(path string) error {
-	url, err := toURL(nil, path)
-	if err != nil {
-		return wrapError(err, "Failed to obtain url to schema file")
-	}
-	return c.SetSchemaURL(url)
-}
-
-// SetSchemaURL loads a JSON v4 schema from the given URL
-func (c *Conflate) SetSchemaURL(url url.URL) error {
-	data, err := loadURL(url)
-	if err != nil {
-		return wrapError(err, "Failed to load schema file")
-	}
-	return c.SetSchemaData(data)
-}
-
-// SetSchemaData loads a JSON v4 schema from the given data
-func (c *Conflate) SetSchemaData(data []byte) error {
-	var schema interface{}
-	err := JSONUnmarshal(data, &schema)
-	if err != nil {
-		return wrapError(err, "Schema is not valid json")
-	}
-	err = validateSchema(schema)
-	if err != nil {
-		return wrapError(err, "The schema is not valid against the meta-schema http://json-schema.org/draft-04/schema")
-	}
-	c.schema = schema
-	return nil
-}
-
 // ApplyDefaults sets any nil or missing values in the data, to the default values defined in the JSON v4 schema
-func (c *Conflate) ApplyDefaults() error {
-	if c.schema == nil {
-		return makeError("Schema is not set")
-	}
-	err := applyDefaults(&c.data, c.schema)
-	return wrapError(err, "The defaults could not be applied")
+func (c *Conflate) ApplyDefaults(s *Schema) error {
+	return s.ApplyDefaults(&c.data)
 }
 
 // Validate checks the data against the JSON v4 schema
-func (c *Conflate) Validate() error {
-	if c.schema == nil {
-		return makeError("Schema is not set")
-	}
-	err := validate(&c.data, c.schema)
-	return wrapError(err, "Schema validation failed")
+func (c *Conflate) Validate(s *Schema) error {
+	return s.Validate(c.data)
 }
 
 // Unmarshal extracts the data as a Golang object
@@ -177,11 +135,6 @@ func (c *Conflate) MarshalYAML() ([]byte, error) {
 // MarshalTOML exports the data as TOML
 func (c *Conflate) MarshalTOML() ([]byte, error) {
 	return tomlMarshal(c.data)
-}
-
-// MarshalSchema exports the schema as JSON
-func (c *Conflate) MarshalSchema() ([]byte, error) {
-	return jsonMarshal(c.schema)
 }
 
 func (c *Conflate) addData(fdata ...filedata) error {

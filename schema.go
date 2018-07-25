@@ -3,43 +3,79 @@ package conflate
 import (
 	"github.com/xeipuuv/gojsonreference"
 	"github.com/xeipuuv/gojsonschema"
+	"net/url"
 	"reflect"
 	"strings"
 )
 
-var metaSchema interface{}
-
-var getSchema = getDefaultSchema
-
-func getDefaultSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"anyOf": []interface{}{
-			map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					Includes: map[string]interface{}{
-						"type": "array",
-						"items": map[string]interface{}{
-							"type": "string",
-						},
-					},
-				},
-			},
-			map[string]interface{}{
-				"type": "null",
-			},
-		},
-	}
+// Schema contains a JSON v4 schema
+type Schema struct {
+	s interface{}
 }
 
-func validateSchema(schema interface{}) error {
+// NewSchemaFile loads a JSON v4 schema from the given path
+func NewSchemaFile(path string) (*Schema, error) {
+	url, err := toURL(nil, path)
+	if err != nil {
+		return nil, wrapError(err, "Failed to obtain url to schema file")
+	}
+	return NewSchemaURL(url)
+}
+
+// NewSchemaURL loads a JSON v4 schema from the given URL
+func NewSchemaURL(url url.URL) (*Schema, error) {
+	data, err := loadURL(url)
+	if err != nil {
+		return nil, wrapError(err, "Failed to load schema url %v", url)
+	}
+	return NewSchemaData(data)
+}
+
+// NewSchemaData loads a JSON v4 schema from the given data
+func NewSchemaData(data []byte) (*Schema, error) {
+	var s interface{}
+	err := JSONUnmarshal(data, &s)
+	if err != nil {
+		return nil, wrapError(err, "Schema is not valid json")
+	}
+	return NewSchemaGo(s)
+}
+
+// NewSchemaGo creates a Schema instance from a schema represented as a golang object
+func NewSchemaGo(s interface{}) (*Schema, error) {
+	err := validateSchema(s)
+	if err != nil {
+		return nil, wrapError(err, "The schema is not valid against the meta-schema http://json-schema.org/draft-04/schema")
+	}
+	return &Schema{s: s}, nil
+}
+
+// Validate checks the given golang data against the schema
+func (s *Schema) Validate(data interface{}) error {
+	if s == nil {
+		return makeError("Schema is not set")
+	}
+	return validate(data, s.s)
+}
+
+// ApplyDefaults adds default values defined in the schema to the data pointed to by pData
+func (s *Schema) ApplyDefaults(pData interface{}) error {
+	if s == nil {
+		return makeError("Schema is not set")
+	}
+	return applyDefaults(pData, s.s)
+}
+
+var metaSchema interface{}
+
+func validateSchema(s interface{}) error {
 	if metaSchema == nil {
 		err := JSONUnmarshal(metaSchemaData, &metaSchema)
 		if err != nil {
 			return wrapError(err, "Could not load json meta-schema")
 		}
 	}
-	return validate(schema, metaSchema)
+	return validate(s, metaSchema)
 }
 
 func validate(data interface{}, schema interface{}) error {
@@ -50,7 +86,8 @@ func validate(data interface{}, schema interface{}) error {
 	if err != nil {
 		return wrapError(err, "An error occurred during validation")
 	}
-	return processResult(result)
+	err = processResult(result)
+	return wrapError(err, "Schema validation failed")
 }
 
 func processResult(result *gojsonschema.Result) error {
@@ -77,7 +114,8 @@ func convertJSONContext(jsonCtx string) context {
 }
 
 func applyDefaults(pData interface{}, schema interface{}) error {
-	return applyDefaultsRecursive(rootContext(), schema, pData, schema)
+	err := applyDefaultsRecursive(rootContext(), schema, pData, schema)
+	return wrapError(err, "The defaults could not be applied")
 }
 
 func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface{}, schema interface{}) error {

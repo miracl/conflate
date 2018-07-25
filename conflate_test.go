@@ -171,49 +171,10 @@ func TestFromFiles_ExpandError(t *testing.T) {
 	assert.Contains(t, err.Error(), "Failed to load url")
 }
 
-func TestFromFiles_SchemaBadUrl(t *testing.T) {
-	c, err := FromFiles("testdata/valid_parent.json")
-	assert.Nil(t, err)
-	err = c.SetSchemaFile(`!"£$%^&*()`)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to obtain url to schema file")
-}
-
-func TestFromFiles_SchemaMissingError(t *testing.T) {
-	c, err := FromFiles("testdata/valid_parent.json")
-	assert.Nil(t, err)
-	err = c.SetSchemaFile("missing file")
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to load schema file")
-}
-
-func TestFromFiles_SchemaBadJsonError(t *testing.T) {
-	c, err := FromFiles("testdata/valid_parent.json")
-	assert.Nil(t, err)
-	err = c.SetSchemaFile("conflate.go")
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Schema is not valid json")
-}
-
-func TestFromFiles_SchemaBadSchemaError(t *testing.T) {
-	c, err := FromFiles("testdata/valid_parent.json")
-	assert.Nil(t, err)
-	err = c.SetSchemaFile("testdata/bad.schema.json")
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The schema is not valid against the meta-schema")
-}
-
-func TestFromFiles_Schema(t *testing.T) {
-	c, err := FromFiles("testdata/valid_parent.json")
-	assert.Nil(t, err)
-	err = c.SetSchemaFile("testdata/test.schema.json")
-	assert.Nil(t, err)
-}
-
-func TestFromFiles_ValidationNoSchemaErro(t *testing.T) {
+func TestFromFiles_ValidationNoSchemaError(t *testing.T) {
 	c, err := FromFiles("testdata/valid_child.json")
 	assert.Nil(t, err)
-	err = c.Validate()
+	err = c.Validate(nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Schema is not set")
 }
@@ -221,9 +182,9 @@ func TestFromFiles_ValidationNoSchemaErro(t *testing.T) {
 func TestFromFiles_ValidationError(t *testing.T) {
 	c, err := FromFiles("testdata/valid_child.json")
 	assert.Nil(t, err)
-	err = c.SetSchemaFile("testdata/test.schema.json")
+	s, err := NewSchemaFile("testdata/test.schema.json")
 	assert.Nil(t, err)
-	err = c.Validate()
+	err = c.Validate(s)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Schema validation failed")
 }
@@ -231,16 +192,16 @@ func TestFromFiles_ValidationError(t *testing.T) {
 func TestFromFiles_ValidationOk(t *testing.T) {
 	c, err := FromFiles("testdata/valid_parent.json")
 	assert.Nil(t, err)
-	err = c.SetSchemaFile("testdata/test.schema.json")
+	s, err := NewSchemaFile("testdata/test.schema.json")
 	assert.Nil(t, err)
-	err = c.Validate()
+	err = c.Validate(s)
 	assert.Nil(t, err)
 }
 
 func TestFromFiles_ApplyDefaultsNoSchema(t *testing.T) {
 	c, err := FromFiles("testdata/valid_parent.json")
 	assert.Nil(t, err)
-	err = c.ApplyDefaults()
+	err = c.ApplyDefaults(nil)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Schema is not set")
 }
@@ -248,10 +209,10 @@ func TestFromFiles_ApplyDefaultsNoSchema(t *testing.T) {
 func TestFromFiles_ApplyDefaultsError(t *testing.T) {
 	c, err := FromFiles("testdata/valid_parent.json")
 	assert.Nil(t, err)
-	err = c.SetSchemaFile("testdata/test.schema.json")
+	s, err := NewSchemaFile("testdata/test.schema.json")
 	assert.Nil(t, err)
-	c.schema = []interface{}{"not a map"}
-	err = c.ApplyDefaults()
+	s.s = []interface{}{"not a map"}
+	err = c.ApplyDefaults(s)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "The defaults could not be applied")
 	assert.Contains(t, err.Error(), "Schema section is not a map")
@@ -260,9 +221,9 @@ func TestFromFiles_ApplyDefaultsError(t *testing.T) {
 func TestFromFiles_ApplyDefaults(t *testing.T) {
 	c, err := FromFiles()
 	assert.Nil(t, err)
-	err = c.SetSchemaFile("testdata/test.schema.json")
+	s, err := NewSchemaFile("testdata/test.schema.json")
 	assert.Nil(t, err)
-	err = c.ApplyDefaults()
+	err = c.ApplyDefaults(s)
 	assert.Nil(t, err)
 	testData := TestData{}
 	err = c.Unmarshal(&testData)
@@ -342,30 +303,6 @@ func TestConflate_MarshalTOML(t *testing.T) {
 	data, err := c.MarshalTOML()
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalTOML, data)
-}
-
-func TestConflate_MarshalSchema(t *testing.T) {
-	c := New()
-	err := c.SetSchemaData([]byte("{}"))
-	assert.Nil(t, err)
-	data, err := c.MarshalSchema()
-	assert.Nil(t, err)
-	assert.Equal(t, "{}\n", string(data))
-}
-
-func TestConflate_MarshalSchemaNil(t *testing.T) {
-	c := New()
-	data, err := c.MarshalSchema()
-	assert.Nil(t, err)
-	assert.Equal(t, string(data), "null\n")
-}
-
-func TestConflate_MarshalSchemaError(t *testing.T) {
-	c := New()
-	c.schema = make(chan int, 1)
-	_, err := c.MarshalSchema()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The data could not be marshalled")
 }
 
 func TestConflate_addDataError(t *testing.T) {
