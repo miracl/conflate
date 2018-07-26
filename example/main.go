@@ -37,19 +37,19 @@ func main() {
 		return
 	}
 	// load a json schema
-	err = c.SetSchemaFile(path.Join(thisDir, "../testdata/test.schema.json"))
+	schema, err := conflate.NewSchemaFile(path.Join(thisDir, "../testdata/test.schema.json"))
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	// apply defaults defined in schema to merged data
-	err = c.ApplyDefaults()
+	err = c.ApplyDefaults(schema)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	// validate merged data against schema
-	err = c.Validate()
+	err = c.Validate(schema)
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -22,7 +22,7 @@ func main() {
 
 	var data dataFlag
 	flag.Var(&data, "data", "The path/url of JSON/YAML/TOML data, or 'stdin' to read from standard input")
-	schema := flag.String("schema", "", "The path/url of a JSON v4 schema file")
+	schemaFile := flag.String("schema", "", "The path/url of a JSON v4 schema file")
 	defaults := flag.Bool("defaults", false, "Apply defaults from schema to data")
 	validate := flag.Bool("validate", false, "Validate the data against the schema")
 	format := flag.String("format", "", "Output format of the data JSON/YAML/TOML")
@@ -62,16 +62,18 @@ func main() {
 		}
 	}
 
-	if *schema != "" {
-		err := c.SetSchemaFile(*schema)
+	var schema *conflate.Schema
+	if *schemaFile != "" {
+		s, err := conflate.NewSchemaFile(*schemaFile)
 		failIfError(err)
+		schema = s
 	}
 	if *defaults {
-		err := c.ApplyDefaults()
+		err := c.ApplyDefaults(schema)
 		failIfError(err)
 	}
 	if *validate {
-		err := c.Validate()
+		err := c.Validate(schema)
 		failIfError(err)
 	}
 	if *format != "" {
