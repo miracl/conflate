@@ -24,6 +24,7 @@ func main() {
 	flag.Var(&data, "data", "The path/url of JSON/YAML/TOML data, or 'stdin' to read from standard input")
 	schemaFile := flag.String("schema", "", "The path/url of a JSON v4 schema file")
 	defaults := flag.Bool("defaults", false, "Apply defaults from schema to data")
+	strip := flag.Bool("strip", false, "Remove values from data that are identica to the defaults defined in the schema")
 	validate := flag.Bool("validate", false, "Validate the data against the schema")
 	format := flag.String("format", "", "Output format of the data JSON/YAML/TOML")
 	includes := flag.String("includes", "includes", "Name of includes array. Blank string suppresses expansion of includes arrays")
@@ -74,6 +75,10 @@ func main() {
 	}
 	if *validate {
 		err := c.Validate(schema)
+		failIfError(err)
+	}
+	if *strip {
+		err := c.StripDefaults(schema)
 		failIfError(err)
 	}
 	if *format != "" {

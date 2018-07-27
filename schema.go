@@ -63,7 +63,15 @@ func (s *Schema) ApplyDefaults(pData interface{}) error {
 	if s == nil {
 		return makeError("Schema is not set")
 	}
-	return applyDefaults(pData, s.s)
+	return applyDefaults(pData, s.s, false)
+}
+
+// StripDefaults removes any values that are identical to the default values defined in the schema
+func (s *Schema) StripDefaults(pData interface{}) error {
+	if s == nil {
+		return makeError("Schema is not set")
+	}
+	return applyDefaults(pData, s.s, true)
 }
 
 var metaSchema interface{}
@@ -113,12 +121,12 @@ func convertJSONContext(jsonCtx string) context {
 	return rootContext().add(parts[1:]...)
 }
 
-func applyDefaults(pData interface{}, schema interface{}) error {
-	err := applyDefaultsRecursive(rootContext(), schema, pData, schema)
+func applyDefaults(pData interface{}, schema interface{}, removeDefaults bool) error {
+	err := applyDefaultsRecursive(rootContext(), schema, pData, schema, removeDefaults)
 	return wrapError(err, "The defaults could not be applied")
 }
 
-func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface{}, schema interface{}) error {
+func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface{}, schema interface{}, removeDefaults bool) error {
 	if pData == nil {
 		return makeContextError(ctx, "Destination value must not be nil")
 	}
@@ -148,7 +156,7 @@ func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface
 		if subSchema == nil || err != nil {
 			return makeContextError(ctx, wrapError(err, "Cannot find reference '%v'", ref).Error())
 		}
-		return applyDefaultsRecursive(ctx.add(ref), rootSchema, pData, subSchema)
+		return applyDefaultsRecursive(ctx.add(ref), rootSchema, pData, subSchema, removeDefaults)
 	}
 
 	schemaType, ok := schemaNode["type"]
@@ -160,18 +168,27 @@ func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface
 		return makeContextError(ctx, "Schema section does not have a valid 'type' attribute")
 	}
 
-	if value, ok := schemaNode["default"]; ok && data == nil {
+	if value, ok := schemaNode["default"]; ok {
 		defaultVal := reflect.ValueOf(value)
-		dataVal.Set(defaultVal)
-		data = dataVal.Interface()
+		if removeDefaults {
+			if reflect.DeepEqual(defaultVal.Interface(), data) {
+				p := pData.(*interface{})
+				*p = nil
+				return nil
+			}
+		}
+		if data == nil {
+			dataVal.Set(defaultVal)
+			data = dataVal.Interface()
+		}
 	}
 
 	var err error
 	switch schemaType {
 	case "object":
-		err = applyObjectDefaults(ctx, rootSchema, data, schemaNode)
+		err = applyObjectDefaults(ctx, rootSchema, data, schemaNode, removeDefaults)
 	case "array":
-		err = applyArrayDefaults(ctx, rootSchema, data, schemaNode)
+		err = applyArrayDefaults(ctx, rootSchema, data, schemaNode, removeDefaults)
 	}
 	return err
 }
@@ -185,7 +202,7 @@ func hasKey(m map[string]interface{}, keys ...string) bool {
 	return false
 }
 
-func applyObjectDefaults(ctx context, rootSchema interface{}, data interface{}, schemaNode map[string]interface{}) error {
+func applyObjectDefaults(ctx context, rootSchema interface{}, data interface{}, schemaNode map[string]interface{}, removeDefaults bool) error {
 	if data == nil {
 		return nil
 	}
@@ -201,12 +218,14 @@ func applyObjectDefaults(ctx context, rootSchema interface{}, data interface{}, 
 		schemaProps = props.(map[string]interface{})
 		for name, schemaProp := range schemaProps {
 			dataProp := dataProps[name]
-			err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, schemaProp)
+			err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, schemaProp, removeDefaults)
 			if err != nil {
 				return wrapError(err, "Failed to apply defaults to object property")
 			}
 			if dataProp != nil {
 				dataProps[name] = dataProp
+			} else {
+				delete(dataProps, name)
 			}
 		}
 	}
@@ -214,7 +233,7 @@ func applyObjectDefaults(ctx context, rootSchema interface{}, data interface{}, 
 		if addProps, ok = addProps.(map[string]interface{}); ok {
 			for name, dataProp := range dataProps {
 				if schemaProps == nil || schemaProps[name] == nil {
-					err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, addProps)
+					err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, addProps, removeDefaults)
 					if err != nil {
 						return wrapError(err, "Failed to apply defaults to additional object property")
 					}
@@ -228,7 +247,7 @@ func applyObjectDefaults(ctx context, rootSchema interface{}, data interface{}, 
 	return nil
 }
 
-func applyArrayDefaults(ctx context, rootSchema interface{}, data interface{}, schemaNode map[string]interface{}) error {
+func applyArrayDefaults(ctx context, rootSchema interface{}, data interface{}, schemaNode map[string]interface{}, removeDefaults bool) error {
 	if data == nil {
 		return nil
 	}
@@ -239,7 +258,7 @@ func applyArrayDefaults(ctx context, rootSchema interface{}, data interface{}, s
 	if items, ok := schemaNode["items"]; ok {
 		schemaItem := items.(map[string]interface{})
 		for i, dataItem := range dataItems {
-			err := applyDefaultsRecursive(ctx.addInt(i), rootSchema, &dataItem, schemaItem)
+			err := applyDefaultsRecursive(ctx.addInt(i), rootSchema, &dataItem, schemaItem, removeDefaults)
 			if err != nil {
 				return wrapError(err, "Failed to apply defaults to array item")
 			}

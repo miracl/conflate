@@ -14,8 +14,7 @@
           "default": "child"
         },
         "parent_only": {
-          "type": "string",
-          "default": "parent"
+          "type": "string"
         },
         "sibling_only": {
           "type": "string",

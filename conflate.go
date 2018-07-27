@@ -112,6 +112,11 @@ func (c *Conflate) ApplyDefaults(s *Schema) error {
 	return s.ApplyDefaults(&c.data)
 }
 
+// StripDefaults removes any values that are identical to the default values defined in the schema
+func (c *Conflate) StripDefaults(s *Schema) error {
+	return s.StripDefaults(&c.data)
+}
+
 // Validate checks the data against the JSON v4 schema
 func (c *Conflate) Validate(s *Schema) error {
 	return s.Validate(c.data)
