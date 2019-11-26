@@ -27,17 +27,16 @@
 package gojsonschema
 
 import (
-	"errors"
+	"github.com/xeipuuv/gojsonreference"
 	"math/big"
 	"regexp"
-	"strings"
-
-	"github.com/xeipuuv/gojsonreference"
 )
 
+// Constants
 const (
-	KEY_SCHEMA                = "$subSchema"
+	KEY_SCHEMA                = "$schema"
 	KEY_ID                    = "id"
+	KEY_ID_NEW                = "$id"
 	KEY_REF                   = "$ref"
 	KEY_TITLE                 = "title"
 	KEY_DESCRIPTION           = "description"
@@ -47,6 +46,7 @@ const (
 	KEY_PROPERTIES            = "properties"
 	KEY_PATTERN_PROPERTIES    = "patternProperties"
 	KEY_ADDITIONAL_PROPERTIES = "additionalProperties"
+	KEY_PROPERTY_NAMES        = "propertyNames"
 	KEY_DEFINITIONS           = "definitions"
 	KEY_MULTIPLE_OF           = "multipleOf"
 	KEY_MINIMUM               = "minimum"
@@ -64,6 +64,8 @@ const (
 	KEY_MIN_ITEMS             = "minItems"
 	KEY_MAX_ITEMS             = "maxItems"
 	KEY_UNIQUE_ITEMS          = "uniqueItems"
+	KEY_CONTAINS              = "contains"
+	KEY_CONST                 = "const"
 	KEY_ENUM                  = "enum"
 	KEY_ONE_OF                = "oneOf"
 	KEY_ANY_OF                = "anyOf"
@@ -75,12 +77,17 @@ const (
 )
 
 type subSchema struct {
+	draft *Draft
+
 	// basic subSchema meta properties
 	id          *gojsonreference.JsonReference
 	title       *string
 	description *string
 
 	property string
+
+	// Quick pass/fail for boolean schemas
+	pass *bool
 
 	// Types associated with the subSchema
 	types jsonSchemaType
@@ -89,23 +96,19 @@ type subSchema struct {
 	ref *gojsonreference.JsonReference
 	// Schema referenced
 	refSchema *subSchema
-	// Json reference
-	subSchema *gojsonreference.JsonReference
 
 	// hierarchy
 	parent                      *subSchema
-	definitions                 map[string]*subSchema
-	definitionsChildren         []*subSchema
 	itemsChildren               []*subSchema
 	itemsChildrenIsSingleSchema bool
 	propertiesChildren          []*subSchema
 
 	// validation : number / integer
-	multipleOf       *big.Float
-	maximum          *big.Float
-	exclusiveMaximum bool
-	minimum          *big.Float
-	exclusiveMinimum bool
+	multipleOf       *big.Rat
+	maximum          *big.Rat
+	exclusiveMaximum *big.Rat
+	minimum          *big.Rat
+	exclusiveMinimum *big.Rat
 
 	// validation : string
 	minLength *int
@@ -121,16 +124,19 @@ type subSchema struct {
 	dependencies         map[string]interface{}
 	additionalProperties interface{}
 	patternProperties    map[string]*subSchema
+	propertyNames        *subSchema
 
 	// validation : array
 	minItems    *int
 	maxItems    *int
 	uniqueItems bool
+	contains    *subSchema
 
 	additionalItems interface{}
 
 	// validation : all
-	enum []string
+	_const *string //const is a golang keyword
+	enum   []string
 
 	// validation : subSchema
 	oneOf []*subSchema
@@ -140,106 +146,4 @@ type subSchema struct {
 	_if   *subSchema // if/else are golang keywords
 	_then *subSchema
 	_else *subSchema
-}
-
-func (s *subSchema) AddEnum(i interface{}) error {
-
-	is, err := marshalToJsonString(i)
-	if err != nil {
-		return err
-	}
-
-	if isStringInSlice(s.enum, *is) {
-		return errors.New(formatErrorDescription(
-			Locale.KeyItemsMustBeUnique(),
-			ErrorDetails{"key": KEY_ENUM},
-		))
-	}
-
-	s.enum = append(s.enum, *is)
-
-	return nil
-}
-
-func (s *subSchema) ContainsEnum(i interface{}) (bool, error) {
-
-	is, err := marshalToJsonString(i)
-	if err != nil {
-		return false, err
-	}
-
-	return isStringInSlice(s.enum, *is), nil
-}
-
-func (s *subSchema) AddOneOf(subSchema *subSchema) {
-	s.oneOf = append(s.oneOf, subSchema)
-}
-
-func (s *subSchema) AddAllOf(subSchema *subSchema) {
-	s.allOf = append(s.allOf, subSchema)
-}
-
-func (s *subSchema) AddAnyOf(subSchema *subSchema) {
-	s.anyOf = append(s.anyOf, subSchema)
-}
-
-func (s *subSchema) SetNot(subSchema *subSchema) {
-	s.not = subSchema
-}
-
-func (s *subSchema) SetIf(subSchema *subSchema) {
-	s._if = subSchema
-}
-
-func (s *subSchema) SetThen(subSchema *subSchema) {
-	s._then = subSchema
-}
-
-func (s *subSchema) SetElse(subSchema *subSchema) {
-	s._else = subSchema
-}
-
-func (s *subSchema) AddRequired(value string) error {
-
-	if isStringInSlice(s.required, value) {
-		return errors.New(formatErrorDescription(
-			Locale.KeyItemsMustBeUnique(),
-			ErrorDetails{"key": KEY_REQUIRED},
-		))
-	}
-
-	s.required = append(s.required, value)
-
-	return nil
-}
-
-func (s *subSchema) AddDefinitionChild(child *subSchema) {
-	s.definitionsChildren = append(s.definitionsChildren, child)
-}
-
-func (s *subSchema) AddItemsChild(child *subSchema) {
-	s.itemsChildren = append(s.itemsChildren, child)
-}
-
-func (s *subSchema) AddPropertiesChild(child *subSchema) {
-	s.propertiesChildren = append(s.propertiesChildren, child)
-}
-
-func (s *subSchema) PatternPropertiesString() string {
-
-	if s.patternProperties == nil || len(s.patternProperties) == 0 {
-		return STRING_UNDEFINED // should never happen
-	}
-
-	patternPropertiesKeySlice := []string{}
-	for pk := range s.patternProperties {
-		patternPropertiesKeySlice = append(patternPropertiesKeySlice, `"`+pk+`"`)
-	}
-
-	if len(patternPropertiesKeySlice) == 1 {
-		return patternPropertiesKeySlice[0]
-	}
-
-	return "[" + strings.Join(patternPropertiesKeySlice, ",") + "]"
-
 }
