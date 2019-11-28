@@ -1,11 +1,21 @@
 package conflate
 
 import (
-	"github.com/xeipuuv/gojsonreference"
-	"github.com/xeipuuv/gojsonschema"
+	"fmt"
+	"math"
 	"net/url"
 	"reflect"
 	"strings"
+
+	"github.com/xeipuuv/gojsonreference"
+	"github.com/xeipuuv/gojsonschema"
+)
+
+const (
+	keySchema = "$schema"
+	draft04   = "http://json-schema.org/draft-04/schema#"
+	draft06   = "http://json-schema.org/draft-06/schema#"
+	draft07   = "http://json-schema.org/draft-07/schema#"
 )
 
 // Schema contains a JSON v4 schema
@@ -43,9 +53,10 @@ func NewSchemaData(data []byte) (*Schema, error) {
 
 // NewSchemaGo creates a Schema instance from a schema represented as a golang object
 func NewSchemaGo(s interface{}) (*Schema, error) {
-	err := validateSchema(s)
+	// validate if the schema is properly constructed by its specified draft
+	draft, err := validateSchema(s)
 	if err != nil {
-		return nil, wrapError(err, "The schema is not valid against the meta-schema http://json-schema.org/draft-04/schema")
+		return nil, wrapError(err, "The schema is not valid against the meta-schema "+draft)
 	}
 	return &Schema{s: s}, nil
 }
@@ -68,14 +79,46 @@ func (s *Schema) ApplyDefaults(pData interface{}) error {
 
 var metaSchema interface{}
 
-func validateSchema(s interface{}) error {
-	if metaSchema == nil {
-		err := JSONUnmarshal(metaSchemaData, &metaSchema)
-		if err != nil {
-			return wrapError(err, "Could not load json meta-schema")
+func updateMetaSchema(s interface{}) (draft string, err error) {
+	m, ok := s.(map[string]interface{})
+	if !ok {
+		return "Unknown", makeError("Invalid schema structure")
+	}
+	// use schema draft 04 if we don't have a key to specify it
+	draft = draft04
+	data := metaSchemaData[draft]
+	if v, ok := m[keySchema]; ok {
+		draft = fmt.Sprintf("%v", v)
+		if d, ok := metaSchemaData[draft]; ok {
+			data = d
 		}
 	}
-	return validate(s, metaSchema)
+	err = JSONUnmarshal(data, &metaSchema)
+	if err != nil {
+		return draft, wrapError(err, "Could not load json meta-schema")
+	}
+	return draft, nil
+}
+
+func validateSchema(schema interface{}) (string, error) {
+	schemaLoader := gojsonschema.NewGoLoader(schema)
+	sl := gojsonschema.NewSchemaLoader()
+	sl.AutoDetect = true
+	sl.Validate = true
+	err := sl.AddSchemas(schemaLoader)
+	if err != nil {
+		draft := fmt.Sprintf("Draft0%v", sl.Draft)
+		if sl.Draft == math.MaxInt32 {
+			draft = "hybrid"
+		}
+		return draft, wrapError(err, "Schema validation failed")
+	}
+
+	draft, err := updateMetaSchema(schema)
+	if err != nil {
+		return draft, wrapError(err, "Cannot access the schema draft")
+	}
+	return draft, validate(schema, metaSchema)
 }
 
 func validate(data interface{}, schema interface{}) error {
@@ -251,7 +294,8 @@ func applyArrayDefaults(ctx context, rootSchema interface{}, data interface{}, s
 	return nil
 }
 
-var metaSchemaData = []byte(`
+var metaSchemaData = map[string][]byte{
+	draft04: []byte(`
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "description": "Core schema meta-schema",
@@ -400,4 +444,327 @@ var metaSchemaData = []byte(`
         "exclusiveMinimum": [ "minimum" ]
     },
     "default": {}
-}`)
+}`),
+	draft06: []byte(`{
+		"$schema": "http://json-schema.org/draft-06/schema#",
+		"$id": "http://json-schema.org/draft-06/schema#",
+		"title": "Core schema meta-schema",
+		"definitions": {
+			"schemaArray": {
+				"type": "array",
+				"minItems": 1,
+				"items": { "$ref": "#" }
+			},
+			"nonNegativeInteger": {
+				"type": "integer",
+				"minimum": 0
+			},
+			"nonNegativeIntegerDefault0": {
+				"allOf": [
+					{ "$ref": "#/definitions/nonNegativeInteger" },
+					{ "default": 0 }
+				]
+			},
+			"simpleTypes": {
+				"enum": [
+					"array",
+					"boolean",
+					"integer",
+					"null",
+					"number",
+					"object",
+					"string"
+				]
+			},
+			"stringArray": {
+				"type": "array",
+				"items": { "type": "string" },
+				"uniqueItems": true,
+				"default": []
+			}
+		},
+		"type": ["object", "boolean"],
+		"properties": {
+			"$id": {
+				"type": "string",
+				"format": "uri-reference"
+			},
+			"$schema": {
+				"type": "string",
+				"format": "uri"
+			},
+			"$ref": {
+				"type": "string",
+				"format": "uri-reference"
+			},
+			"title": {
+				"type": "string"
+			},
+			"description": {
+				"type": "string"
+			},
+			"default": {},
+			"examples": {
+				"type": "array",
+				"items": {}
+			},
+			"multipleOf": {
+				"type": "number",
+				"exclusiveMinimum": 0
+			},
+			"maximum": {
+				"type": "number"
+			},
+			"exclusiveMaximum": {
+				"type": "number"
+			},
+			"minimum": {
+				"type": "number"
+			},
+			"exclusiveMinimum": {
+				"type": "number"
+			},
+			"maxLength": { "$ref": "#/definitions/nonNegativeInteger" },
+			"minLength": { "$ref": "#/definitions/nonNegativeIntegerDefault0" },
+			"pattern": {
+				"type": "string",
+				"format": "regex"
+			},
+			"additionalItems": { "$ref": "#" },
+			"items": {
+				"anyOf": [
+					{ "$ref": "#" },
+					{ "$ref": "#/definitions/schemaArray" }
+				],
+				"default": {}
+			},
+			"maxItems": { "$ref": "#/definitions/nonNegativeInteger" },
+			"minItems": { "$ref": "#/definitions/nonNegativeIntegerDefault0" },
+			"uniqueItems": {
+				"type": "boolean",
+				"default": false
+			},
+			"contains": { "$ref": "#" },
+			"maxProperties": { "$ref": "#/definitions/nonNegativeInteger" },
+			"minProperties": { "$ref": "#/definitions/nonNegativeIntegerDefault0" },
+			"required": { "$ref": "#/definitions/stringArray" },
+			"additionalProperties": { "$ref": "#" },
+			"definitions": {
+				"type": "object",
+				"additionalProperties": { "$ref": "#" },
+				"default": {}
+			},
+			"properties": {
+				"type": "object",
+				"additionalProperties": { "$ref": "#" },
+				"default": {}
+			},
+			"patternProperties": {
+				"type": "object",
+				"additionalProperties": { "$ref": "#" },
+				"default": {}
+			},
+			"dependencies": {
+				"type": "object",
+				"additionalProperties": {
+					"anyOf": [
+						{ "$ref": "#" },
+						{ "$ref": "#/definitions/stringArray" }
+					]
+				}
+			},
+			"propertyNames": { "$ref": "#" },
+			"const": {},
+			"enum": {
+				"type": "array",
+				"minItems": 1,
+				"uniqueItems": true
+			},
+			"type": {
+				"anyOf": [
+					{ "$ref": "#/definitions/simpleTypes" },
+					{
+						"type": "array",
+						"items": { "$ref": "#/definitions/simpleTypes" },
+						"minItems": 1,
+						"uniqueItems": true
+					}
+				]
+			},
+			"format": { "type": "string" },
+			"allOf": { "$ref": "#/definitions/schemaArray" },
+			"anyOf": { "$ref": "#/definitions/schemaArray" },
+			"oneOf": { "$ref": "#/definitions/schemaArray" },
+			"not": { "$ref": "#" }
+		},
+		"default": {}
+	}`),
+	draft07: []byte(`{
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"$id": "http://json-schema.org/draft-07/schema#",
+		"title": "Core schema meta-schema",
+		"definitions": {
+			"schemaArray": {
+				"type": "array",
+				"minItems": 1,
+				"items": { "$ref": "#" }
+			},
+			"nonNegativeInteger": {
+				"type": "integer",
+				"minimum": 0
+			},
+			"nonNegativeIntegerDefault0": {
+				"allOf": [
+					{ "$ref": "#/definitions/nonNegativeInteger" },
+					{ "default": 0 }
+				]
+			},
+			"simpleTypes": {
+				"enum": [
+					"array",
+					"boolean",
+					"integer",
+					"null",
+					"number",
+					"object",
+					"string"
+				]
+			},
+			"stringArray": {
+				"type": "array",
+				"items": { "type": "string" },
+				"uniqueItems": true,
+				"default": []
+			}
+		},
+		"type": ["object", "boolean"],
+		"properties": {
+			"$id": {
+				"type": "string",
+				"format": "uri-reference"
+			},
+			"$schema": {
+				"type": "string",
+				"format": "uri"
+			},
+			"$ref": {
+				"type": "string",
+				"format": "uri-reference"
+			},
+			"$comment": {
+				"type": "string"
+			},
+			"title": {
+				"type": "string"
+			},
+			"description": {
+				"type": "string"
+			},
+			"default": true,
+			"readOnly": {
+				"type": "boolean",
+				"default": false
+			},
+			"examples": {
+				"type": "array",
+				"items": true
+			},
+			"multipleOf": {
+				"type": "number",
+				"exclusiveMinimum": 0
+			},
+			"maximum": {
+				"type": "number"
+			},
+			"exclusiveMaximum": {
+				"type": "number"
+			},
+			"minimum": {
+				"type": "number"
+			},
+			"exclusiveMinimum": {
+				"type": "number"
+			},
+			"maxLength": { "$ref": "#/definitions/nonNegativeInteger" },
+			"minLength": { "$ref": "#/definitions/nonNegativeIntegerDefault0" },
+			"pattern": {
+				"type": "string",
+				"format": "regex"
+			},
+			"additionalItems": { "$ref": "#" },
+			"items": {
+				"anyOf": [
+					{ "$ref": "#" },
+					{ "$ref": "#/definitions/schemaArray" }
+				],
+				"default": true
+			},
+			"maxItems": { "$ref": "#/definitions/nonNegativeInteger" },
+			"minItems": { "$ref": "#/definitions/nonNegativeIntegerDefault0" },
+			"uniqueItems": {
+				"type": "boolean",
+				"default": false
+			},
+			"contains": { "$ref": "#" },
+			"maxProperties": { "$ref": "#/definitions/nonNegativeInteger" },
+			"minProperties": { "$ref": "#/definitions/nonNegativeIntegerDefault0" },
+			"required": { "$ref": "#/definitions/stringArray" },
+			"additionalProperties": { "$ref": "#" },
+			"definitions": {
+				"type": "object",
+				"additionalProperties": { "$ref": "#" },
+				"default": {}
+			},
+			"properties": {
+				"type": "object",
+				"additionalProperties": { "$ref": "#" },
+				"default": {}
+			},
+			"patternProperties": {
+				"type": "object",
+				"additionalProperties": { "$ref": "#" },
+				"propertyNames": { "format": "regex" },
+				"default": {}
+			},
+			"dependencies": {
+				"type": "object",
+				"additionalProperties": {
+					"anyOf": [
+						{ "$ref": "#" },
+						{ "$ref": "#/definitions/stringArray" }
+					]
+				}
+			},
+			"propertyNames": { "$ref": "#" },
+			"const": true,
+			"enum": {
+				"type": "array",
+				"items": true,
+				"minItems": 1,
+				"uniqueItems": true
+			},
+			"type": {
+				"anyOf": [
+					{ "$ref": "#/definitions/simpleTypes" },
+					{
+						"type": "array",
+						"items": { "$ref": "#/definitions/simpleTypes" },
+						"minItems": 1,
+						"uniqueItems": true
+					}
+				]
+			},
+			"format": { "type": "string" },
+			"contentMediaType": { "type": "string" },
+			"contentEncoding": { "type": "string" },
+			"if": { "$ref": "#" },
+			"then": { "$ref": "#" },
+			"else": { "$ref": "#" },
+			"allOf": { "$ref": "#/definitions/schemaArray" },
+			"anyOf": { "$ref": "#/definitions/schemaArray" },
+			"oneOf": { "$ref": "#/definitions/schemaArray" },
+			"not": { "$ref": "#" }
+		},
+		"default": true
+	}`),
+}

@@ -1,8 +1,9 @@
 package conflate
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSchema_NewSchemaBadUrl(t *testing.T) {
@@ -36,37 +37,88 @@ func TestSchema_NewSchema(t *testing.T) {
 	assert.NotNil(t, s.s)
 }
 
-func TestValidateSchema(t *testing.T) {
+func TestNewSchemaGo_ValidateSchema(t *testing.T) {
 	metaSchema = nil
 	data := `{"title": "test"}`
 	var schema interface{}
 	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
-	err = validateSchema(schema)
+	s, err := NewSchemaGo(schema)
+	assert.NotNil(t, s)
 	assert.Nil(t, err)
 	assert.NotNil(t, metaSchema)
 }
 
-func TestValidateSchema_AnyOf(t *testing.T) {
+func TestNewSchemaGo_ValidateSchemaAnyOf(t *testing.T) {
 	data := `{ "type": "object", "properties": { "test": { "anyOf": [ { "type": "integer" } ] } } }`
 	var schema interface{}
 	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
-	err = validateSchema(schema)
+	s, err := NewSchemaGo(schema)
 	assert.Nil(t, err)
+	assert.NotNil(t, s)
 }
 
-func TestValidateSchema_Error(t *testing.T) {
+func TestNewSchemaGo_ValidateSchemaInvalidMetaData(t *testing.T) {
 	metaSchema = nil
 	oldMetaSchemaData := metaSchemaData
 	defer func() {
 		metaSchemaData = oldMetaSchemaData
 		metaSchema = nil
 	}()
-	metaSchemaData = []byte("invalid json")
-	err := validateSchema("test")
+	metaSchemaData = map[string][]byte{draft04: []byte(`{"invalid": "json" `)}
+	data := `{"title": "test"}`
+	var schema interface{}
+	err := JSONUnmarshal([]byte(data), &schema)
+	assert.Nil(t, err)
+	s, err := NewSchemaGo(schema)
+	assert.Nil(t, s)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Could not load json meta-schema")
+}
+
+func TestUpdateMetaSchema_InvalidSchema(t *testing.T) {
+	var schema interface{}
+	_, err := updateMetaSchema(schema)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Invalid schema structure")
+}
+
+func TestUpdateMetaSchema_DefaultDraft(t *testing.T) {
+	metaSchema = nil
+	data := `{"no": "draft"}`
+	var schema interface{}
+	err := JSONUnmarshal([]byte(data), &schema)
+	assert.Nil(t, err)
+	draft, err := updateMetaSchema(schema)
+	assert.Nil(t, err)
+	assert.Equal(t, draft, draft04)
+	var schemaData interface{}
+	err = JSONUnmarshal(metaSchemaData[draft], &schemaData)
+	assert.Nil(t, err)
+	assert.Equal(t, schemaData, metaSchema)
+}
+
+func TestUpdateMetaSchema_ReadDraft(t *testing.T) {
+	metaSchema = nil
+	data := `{"$schema": "http://json-schema.org/draft-06/schema#"}`
+	var schema interface{}
+	err := JSONUnmarshal([]byte(data), &schema)
+	assert.Nil(t, err)
+	draft, err := updateMetaSchema(schema)
+	assert.Nil(t, err)
+	assert.Equal(t, draft, draft06)
+	var schemaData interface{}
+	err = JSONUnmarshal(metaSchemaData[draft], &schemaData)
+	assert.Nil(t, err)
+	assert.Equal(t, schemaData, metaSchema)
+}
+
+func TestNewSchemaGo_ValidateInvalidSchema(t *testing.T) {
+	s, err := NewSchemaGo("test")
+	assert.Nil(t, s)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Schema validation failed")
 }
 
 func TestValidate(t *testing.T) {
@@ -80,15 +132,14 @@ func TestValidate(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestValidate_ValidateError(t *testing.T) {
+func TestValidate_ValidateSchemaError(t *testing.T) {
 	var data interface{}
 	var schema interface{}
 	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
 	err = validate(data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "An error occurred during validation")
-	assert.Contains(t, err.Error(), "Invalid JSON")
+	assert.Contains(t, err.Error(), "schema is invalid")
 }
 
 func TestValidate_NotValid(t *testing.T) {
@@ -262,7 +313,7 @@ func TestApplyDefaults_ObjectPropertyDefaultNotApplied(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{"val": 1, "other": 1}, data)
 }
 
-func TestApplyDefaults_ObjectPropertyDefaultNoparentDefault(t *testing.T) {
+func TestApplyDefaults_ObjectPropertyDefaultNoParentDefault(t *testing.T) {
 	var data interface{}
 	schema := map[string]interface{}{
 		"type": "object",
@@ -716,7 +767,7 @@ var testSchema = []byte(`
 					"default": [ true ]
 				}
 			}
-    }, 
+    },
     "array_of_int": {
 			"type": "array",
       "items": { "type": "integer" },

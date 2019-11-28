@@ -20,6 +20,7 @@ Conflate is a library and cli-tool, that provides the following features :
 * expand environment variables inside the data
 * marshal merged data to multiple formats (JSON/YAML/TOML/go structs)
 
+It supports draft-04, draft-06 and draft-07 of JSON Schema. If the key $schema is missing, or the draft version is not explicitly set, a hybrid mode is used which merges together functionality of all drafts into one mode.
 Improvements, ideas and bug fixes are welcomed.
 
 ## Getting started
@@ -71,15 +72,15 @@ $cat ./testdata/valid_parent.json
     "valid_child.json",
     "valid_sibling.json"
   ],
-  "parent_only" : "parent", 
-  "parent_child" : "parent", 
-  "parent_sibling" : "parent", 
+  "parent_only" : "parent",
+  "parent_child" : "parent",
+  "parent_sibling" : "parent",
   "all": "parent"
 }
 ```
 
-...run the following command, which will merge [valid_parent.json](https://raw.githubusercontent.com/miracl/conflate/master/testdata/valid_parent.json), 
-[valid_child.json](https://raw.githubusercontent.com/miracl/conflate/master/testdata/valid_child.json), [valid_sibling.json](https://raw.githubusercontent.com/miracl/conflate/master/testdata/valid_sibling.json),  :
+...run the following command, which will merge [valid_parent.json](https://raw.githubusercontent.com/miracl/conflate/master/testdata/valid_parent.json),
+[valid_child.json](https://raw.githubusercontent.com/miracl/conflate/master/testdata/valid_child.json), [valid_sibling.json](https://raw.githubusercontent.com/miracl/conflate/master/testdata/valid_sibling.json)  :
 
 ```bash
 $conflate -data ./testdata/valid_parent.json -format JSON
@@ -165,7 +166,7 @@ $conflate -data ./testdata/valid_child.json -data ./testdata/valid_sibling.json 
 Or alternatively, you can create a top-level JSON file containing only the `includes` array. For fun, lets choose to use YAML for the top-level file, and output TOML :
 
 ```bash
-$cat toplevel.yaml 
+$cat toplevel.yaml
 includes:
   - testdata/valid_child.json
   - testdata/valid_sibling.json
@@ -194,7 +195,7 @@ $echo 'all="MY OVERRIDDEN VALUE"' |  conflate -data ./testdata/valid_parent.json
 }
 ```
 
-Note that in all cases `-data` sources are processed from left-to-right, with values in right files overriding values in left files, so the following doesnt work :
+Note that in all cases `-data` sources are processed from left-to-right, with values in right files overriding values in left files, so the following doesn't work :
 
 ```bash
 $echo 'all="MY OVERRIDDEN VALUE"' |  conflate -data stdin -data ./testdata/valid_parent.json  -format JSON
