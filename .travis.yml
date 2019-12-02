@@ -1,10 +1,9 @@
 language: go
-go: 
+go:
   - 1.x
 
 install:
   - go get
-  - go get github.com/golang/lint/golint
   - go get github.com/modocache/gover
   - go get github.com/mattn/goveralls
   - go get github.com/stretchr/testify/assert
@@ -15,7 +14,6 @@ install:
 script:
   - test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"
   - go vet ./ ./conflate ./example
-  - golint -set_exit_status ./ ./conflate ./example
   - ineffassign ./ ./conflate ./example
   - gocyclo -over 15 ./*.go
   - megacheck -simple.exit-non-zero=true -staticcheck.exit-non-zero=true -unused.exit-non-zero=true ./ ./conflate ./example
