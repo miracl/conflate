@@ -3,6 +3,7 @@ package conflate
 import (
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"encoding/xml"
 	"fmt"
 	"github.com/xeipuuv/gojsonschema"
@@ -19,7 +20,8 @@ func init() {
 	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("pkcs1-private-key", pkcs1PrivateKey))
 	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("pkcs1-public-key", pkcs1PublicKey))
 	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("pkcs8-private-key", pkcs8PrivateKey))
-	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("pkcs8-public-key", pkcs8PublicKey))
+	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("pkcs8-public-key", pkixPublicKey)) // deprecated, use pkix-public-key
+	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("pkix-public-key", pkixPublicKey))
 	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("x509-certificate", x509Certificate))
 }
 
@@ -117,7 +119,7 @@ const (
 	pkcs1PrivateKey cryptoType = 1 + iota
 	pkcs1PublicKey
 	pkcs8PrivateKey
-	pkcs8PublicKey
+	pkixPublicKey
 	x509Certificate
 )
 
@@ -129,37 +131,48 @@ func newCryptoFormatChecker(name string, cType cryptoType) (string, gojsonschema
 }
 
 func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
-	var err error
-
-	if s, ok := input.(string); ok {
-		var data []byte
-		data, err = base64.StdEncoding.DecodeString(s)
-		if err == nil {
-			switch f.cType {
-			case pkcs1PrivateKey:
-				_, err = x509.ParsePKCS1PrivateKey(data)
-			case pkcs1PublicKey:
-				_, err = x509.ParsePKIXPublicKey(data)
-			case pkcs8PrivateKey:
-				_, err = x509.ParsePKCS8PrivateKey(data)
-			case pkcs8PublicKey:
-				_, err = x509.ParsePKIXPublicKey(data)
-			case x509Certificate:
-				_, err = x509.ParseCertificate(data)
-			default:
-				err = makeError(f.name + " called with unsupported type")
-			}
-			err = wrapError(err, "Failed to parse key")
-		} else {
-			err = wrapError(err, "Failed to base-64 decode the data")
-		}
-	} else {
-		err = makeError("The value is not a string")
-	}
-	if err != nil {
-		formatErrs.add(f.name, input, err)
+	s, ok := input.(string)
+	if !ok {
+		formatErrs.add(f.name, input, makeError("The value is not a string"))
 		return false
 	}
+
+	var err error
+
+	var data []byte
+
+	block, _ := pem.Decode([]byte(s))
+	if block != nil {
+		data = block.Bytes
+	} else {
+		// Try to directly base64 decode if not valid PEM
+		data, err = base64.StdEncoding.DecodeString(s)
+		if err != nil {
+			formatErrs.add(f.name, input, wrapError(err, "Failed to decode the data"))
+			return false
+		}
+	}
+
+	switch f.cType {
+	case pkcs1PrivateKey:
+		_, err = x509.ParsePKCS1PrivateKey(data)
+	case pkcs1PublicKey:
+		_, err = x509.ParsePKCS1PublicKey(data)
+	case pkcs8PrivateKey:
+		_, err = x509.ParsePKCS8PrivateKey(data)
+	case pkixPublicKey:
+		_, err = x509.ParsePKIXPublicKey(data)
+	case x509Certificate:
+		_, err = x509.ParseCertificate(data)
+	default:
+		err = makeError(f.name + " called with unsupported type")
+	}
+
+	if err != nil {
+		formatErrs.add(f.name, input, wrapError(err, "Failed to parse key"))
+		return false
+	}
+
 	return true
 }
 
