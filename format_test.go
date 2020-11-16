@@ -1,8 +1,9 @@
 package conflate
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFormatErrors_Get(t *testing.T) {
@@ -48,7 +49,7 @@ func TestXmlFormatCheckerIsFormat_NotString(t *testing.T) {
 
 func TestXmlFormatCheckerIsFormat_Valid(t *testing.T) {
 	givenName := "xml"
-	givenValue := "<test>{{.Value}}</test>"
+	givenValue := "<test>Value</test>"
 	formatErrs.clear()
 	defer func() { formatErrs.clear() }()
 	name, checker := newXMLFormatChecker(givenName)
@@ -65,6 +66,49 @@ func TestXmlFormatCheckerIsFormat_NotValid(t *testing.T) {
 	formatErrs.clear()
 	defer func() { formatErrs.clear() }()
 	name, checker := newXMLFormatChecker(givenName)
+	assert.Equal(t, givenName, name)
+	result := checker.IsFormat(givenValue)
+	assert.False(t, result)
+	err := formatErrs.get(name, givenValue)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Failed to parse xml")
+}
+
+// --------
+
+func TestXmlTemplateFormatCheckerIsFormat_NotString(t *testing.T) {
+	givenName := "xml"
+	givenValue := 1
+	formatErrs.clear()
+	defer func() { formatErrs.clear() }()
+	name, checker := newXMLTemplateFormatChecker(givenName)
+	assert.Equal(t, givenName, name)
+	result := checker.IsFormat(givenValue)
+	assert.False(t, result)
+	err := formatErrs.get(name, givenValue)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "The value is not a string")
+}
+
+func TestXmlTemplateFormatCheckerIsFormat_Valid(t *testing.T) {
+	givenName := "xml"
+	givenValue := "<test>{{.Value}}</test>"
+	formatErrs.clear()
+	defer func() { formatErrs.clear() }()
+	name, checker := newXMLTemplateFormatChecker(givenName)
+	assert.Equal(t, givenName, name)
+	result := checker.IsFormat(givenValue)
+	assert.True(t, result)
+	err := formatErrs.get(name, givenValue)
+	assert.Nil(t, err)
+}
+
+func TestXmlTemplateFormatCheckerIsFormat_NotValid(t *testing.T) {
+	givenName := "xml"
+	givenValue := "<test>"
+	formatErrs.clear()
+	defer func() { formatErrs.clear() }()
+	name, checker := newXMLTemplateFormatChecker(givenName)
 	assert.Equal(t, givenName, name)
 	result := checker.IsFormat(givenValue)
 	assert.False(t, result)

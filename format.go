@@ -6,15 +6,17 @@ import (
 	"encoding/pem"
 	"encoding/xml"
 	"fmt"
-	"github.com/xeipuuv/gojsonschema"
-	"golang.org/x/net/html"
 	"regexp"
 	"strings"
+
+	"github.com/xeipuuv/gojsonschema"
+	"golang.org/x/net/html"
 )
 
 func init() {
 	// annoyingly the format checker list is a global variable
-	gojsonschema.FormatCheckers.Add(newXMLFormatChecker("xml-template"))
+	gojsonschema.FormatCheckers.Add(newXMLFormatChecker("xml"))
+	gojsonschema.FormatCheckers.Add(newXMLTemplateFormatChecker("xml-template"))
 	gojsonschema.FormatCheckers.Add(newHTMLFormatChecker("html-template"))
 	gojsonschema.FormatCheckers.Add(newRegexFormatChecker("regex"))
 	gojsonschema.FormatCheckers.Add(newCryptoFormatChecker("pkcs1-private-key", pkcs1PrivateKey))
@@ -49,16 +51,42 @@ func (errs formatErrors) key(name interface{}, value interface{}) string {
 
 // ----------------
 
-type xmlFormatChecker struct {
+type xmlFormatChecker struct{ name string }
+
+func newXMLFormatChecker(name string) (string, gojsonschema.FormatChecker) {
+	return name, xmlFormatChecker{name: name}
+}
+
+func (f xmlFormatChecker) IsFormat(input interface{}) bool {
+	var err error
+
+	if s, ok := input.(string); ok {
+		err = xml.Unmarshal([]byte(s), new(interface{}))
+		err = wrapError(err, "Failed to parse xml")
+	} else {
+		err = makeError("The value is not a string")
+	}
+
+	if err != nil {
+		formatErrs.add(f.name, input, err)
+		return false
+	}
+
+	return true
+}
+
+// ----------------
+
+type xmlTemplateFormatChecker struct {
 	tags *regexp.Regexp
 	name string
 }
 
-func newXMLFormatChecker(name string) (string, gojsonschema.FormatChecker) {
-	return name, xmlFormatChecker{name: name, tags: regexp.MustCompile(`{{[^{}]*}}`)}
+func newXMLTemplateFormatChecker(name string) (string, gojsonschema.FormatChecker) {
+	return name, xmlTemplateFormatChecker{name: name, tags: regexp.MustCompile(`{{[^{}]*}}`)}
 }
 
-func (f xmlFormatChecker) IsFormat(input interface{}) bool {
+func (f xmlTemplateFormatChecker) IsFormat(input interface{}) bool {
 	var err error
 
 	if s, ok := input.(string); ok {
