@@ -64,6 +64,11 @@ func mergeMapRecursive(ctx context, toVal reflect.Value, fromVal reflect.Value,
 		return makeContextError(ctx, "The destination value must be a map[string]interface{}")
 	}
 	for name, fromProp := range fromProps {
+		// merge in explicit nil values
+		if fromProp == nil {
+			toProps[name] = nil
+			continue
+		}
 		if val := toProps[name]; val == nil {
 			toProps[name] = fromProp
 		} else {

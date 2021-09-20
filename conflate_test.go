@@ -2,11 +2,12 @@ package conflate
 
 import (
 	gocontext "context"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type TestData struct {
@@ -18,6 +19,11 @@ type TestData struct {
 	ParentChild   string `json:"parent_child"`
 	SiblingChild  string `json:"sibling_child"`
 	All           string `json:"all"`
+}
+
+type TestNulledData struct {
+	Foo string `yaml:"foo"`
+	Bar string `yaml:"bar"`
 }
 
 func TestFromFiles(t *testing.T) {
@@ -317,4 +323,15 @@ func TestConflate_mergeDataError(t *testing.T) {
 	err := c.AddData([]byte(`"x": {}`), []byte(`"x": []`))
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Failed to merge")
+}
+
+func TestFromFilesNulled(t *testing.T) {
+	c, err := FromFiles("testdata/test_not_nulled.yaml", "testdata/test_nulled.yaml")
+	assert.Nil(t, err)
+	assert.NotNil(t, c)
+	var testData TestNulledData
+	err = c.Unmarshal(&testData)
+	assert.Nil(t, err)
+	assert.Equal(t, "foo", testData.Foo)
+	assert.Equal(t, "", testData.Bar)
 }
