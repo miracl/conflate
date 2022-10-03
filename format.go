@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func init() {
+func initFormatCheckers() {
 	// annoyingly the format checker list is a global variable
 	gojsonschema.FormatCheckers.Add(newXMLFormatChecker("xml"))
 	gojsonschema.FormatCheckers.Add(newXMLTemplateFormatChecker("xml-template"))
@@ -37,15 +37,15 @@ func (errs formatErrors) clear() {
 	formatErrs = formatErrors{}
 }
 
-func (errs formatErrors) add(name interface{}, value interface{}, err error) {
+func (errs formatErrors) add(name, value interface{}, err error) {
 	errs[errs.key(name, value)] = err
 }
 
-func (errs formatErrors) get(name interface{}, value interface{}) error {
+func (errs formatErrors) get(name, value interface{}) error {
 	return errs[errs.key(name, value)]
 }
 
-func (errs formatErrors) key(name interface{}, value interface{}) string {
+func (errs formatErrors) key(name, value interface{}) string {
 	return fmt.Sprintf("%v#%v", name, value)
 }
 
@@ -53,6 +53,7 @@ func (errs formatErrors) key(name interface{}, value interface{}) string {
 
 type xmlFormatChecker struct{ name string }
 
+//nolint:unparam // left for extensibility
 func newXMLFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 	return name, xmlFormatChecker{name: name}
 }
@@ -69,6 +70,7 @@ func (f xmlFormatChecker) IsFormat(input interface{}) bool {
 
 	if err != nil {
 		formatErrs.add(f.name, input, err)
+
 		return false
 	}
 
@@ -99,10 +101,13 @@ func (f xmlTemplateFormatChecker) IsFormat(input interface{}) bool {
 	} else {
 		err = makeError("The value is not a string")
 	}
+
 	if err != nil {
 		formatErrs.add(f.name, input, err)
+
 		return false
 	}
+
 	return true
 }
 
@@ -127,10 +132,13 @@ func (f htmlFormatChecker) IsFormat(input interface{}) bool {
 	} else {
 		err = makeError("The value is not a string")
 	}
+
 	if err != nil {
 		formatErrs.add(f.name, input, err)
+
 		return false
 	}
+
 	return true
 }
 
@@ -162,6 +170,7 @@ func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
 	s, ok := input.(string)
 	if !ok {
 		formatErrs.add(f.name, input, makeError("The value is not a string"))
+
 		return false
 	}
 
@@ -177,6 +186,7 @@ func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
 		data, err = base64.StdEncoding.DecodeString(s)
 		if err != nil {
 			formatErrs.add(f.name, input, wrapError(err, "Failed to decode the data"))
+
 			return false
 		}
 	}
@@ -198,6 +208,7 @@ func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
 
 	if err != nil {
 		formatErrs.add(f.name, input, wrapError(err, "Failed to parse key"))
+
 		return false
 	}
 
@@ -208,6 +219,7 @@ func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
 
 type regexFormatChecker struct{ name string }
 
+//nolint:unparam // left for extensibility
 func newRegexFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 	return name, regexFormatChecker{name: name}
 }
@@ -224,6 +236,7 @@ func (f regexFormatChecker) IsFormat(input interface{}) bool {
 
 	if err != nil {
 		formatErrs.add(f.name, input, err)
+
 		return false
 	}
 

@@ -2,13 +2,15 @@ package conflate
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMergeTo(t *testing.T) {
 	var toData interface{}
+
 	data1 := 1
 	data2 := 2
 	data3 := 3
@@ -20,6 +22,7 @@ func TestMergeTo(t *testing.T) {
 
 func TestMergeTo_MergeError(t *testing.T) {
 	var toData interface{}
+
 	fromData := make(map[string]interface{})
 	err := mergeTo(toData, fromData)
 	assert.NotNil(t, err)
@@ -108,7 +111,9 @@ func TestMerge_FromNil(t *testing.T) {
 
 func TestMerge_ToValNil(t *testing.T) {
 	fromData := make(map[string]interface{})
+
 	var toData interface{}
+
 	err := merge(&toData, fromData)
 	assert.Nil(t, err)
 	assert.Equal(t, toData, fromData)
@@ -181,6 +186,7 @@ func TestMerge_Equal(t *testing.T) {
 func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 	mergedVal := reflect.ValueOf(merged)
 
+	//nolint:exhaustive // test caseload
 	switch mergedVal.Kind() {
 	case reflect.Map:
 		testMergeCheckMap(t, merged, data1, data2)
@@ -201,44 +207,56 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 
 func testMergeCheckMap(t *testing.T, merged, data1, data2 interface{}) {
 	var mergedMap, data1Map, data2Map map[string]interface{}
+
 	if merged != nil {
 		mergedMap = merged.(map[string]interface{})
 	}
+
 	if data1 != nil {
 		data1Map = data1.(map[string]interface{})
 	}
+
 	if data2 != nil {
 		data2Map = data2.(map[string]interface{})
 	}
+
 	for name, mergedItem := range mergedMap {
 		var data1Item, data2Item interface{}
+
 		if data1Map != nil {
 			data1Item = data1Map[name]
 		}
+
 		if data2Map != nil {
 			data2Item = data2Map[name]
 		}
+
 		testMergeCheck(t, mergedItem, data1Item, data2Item)
 	}
 }
 
 func testMergeCheckSlice(t *testing.T, merged, data1, data2 interface{}) {
 	var mergedArr, data1Arr, data2Arr []interface{}
+
 	if merged != nil {
 		mergedArr = merged.([]interface{})
 	}
+
 	if data1 != nil {
 		data1Arr = data1.([]interface{})
 	}
+
 	if data2 != nil {
 		data2Arr = data2.([]interface{})
 	}
 
 	assert.Equal(t, len(data1Arr)+len(data2Arr), len(mergedArr))
+
 	data1Pad := make([]interface{}, len(data2Arr))
 	data2Pad := make([]interface{}, len(data1Arr))
 	data1Arr = append(data1Arr, data1Pad...)
 	data2Arr = append(data2Pad, data2Arr...)
+
 	assert.Equal(t, len(data1Arr), len(mergedArr))
 	assert.Equal(t, len(data2Arr), len(mergedArr))
 
@@ -253,9 +271,11 @@ func testMergeCheckSlice(t *testing.T, merged, data1, data2 interface{}) {
 
 func testMergeGetData(t *testing.T, data []byte) interface{} {
 	var out interface{}
+
 	err := json.Unmarshal(data, &out)
 	assert.Nil(t, err)
 	assert.NotNil(t, out)
+
 	return out
 }
 
@@ -264,7 +284,7 @@ var testMergeData1 = []byte(`
   "int_to_only": 1,
   "str_to_only": "str_to",
   "bool_to_only": true,
-  
+
   "int_both": 1,
   "str_both": "str_to",
   "bool_both": true,
@@ -273,20 +293,20 @@ var testMergeData1 = []byte(`
     "int_to_only": 1,
     "str_to_only": "str_to",
     "bool_to_only": true,
-    
+
     "int_both": 1,
     "str_both": "str_to",
     "bool_both": true,
 
     "array_to_only": [
-      "str1_to", 
-      "str2_to", 
+      "str1_to",
+      "str2_to",
       "str3_to"
     ],
 
     "array_both": [
-      "str1_to", 
-      "str2_to", 
+      "str1_to",
+      "str2_to",
       "str3_to"
     ]
   },
@@ -295,21 +315,21 @@ var testMergeData1 = []byte(`
     "int_to_only": 1,
     "str_to_only": "str_to",
     "bool_to_only": true,
-    
+
     "int_both": 1,
     "str_both": "str_to",
     "bool_both": true
   },
 
   "array_to_only": [
-    "str1_to", 
-    "str2_to", 
+    "str1_to",
+    "str2_to",
     "str3_to"
   ],
 
   "array_both": [
-    "str1_to", 
-    "str2_to", 
+    "str1_to",
+    "str2_to",
     "str3_to"
   ]
 }
@@ -335,14 +355,14 @@ var testMergeData2 = []byte(`
     "bool_both": false,
 
     "array_from_only": [
-      "str1_from", 
-      "str2_from", 
+      "str1_from",
+      "str2_from",
       "str3_from"
     ],
 
     "array_both": [
-      "str1_from", 
-      "str2_from", 
+      "str1_from",
+      "str2_from",
       "str3_from"
     ]
   },
@@ -358,14 +378,14 @@ var testMergeData2 = []byte(`
   },
 
   "array_from_only": [
-    "str1_from", 
-    "str2_from", 
+    "str1_from",
+    "str2_from",
     "str3_from"
   ],
 
   "array_both": [
-    "str1_from", 
-    "str2_from", 
+    "str1_from",
+    "str2_from",
     "str3_from"
   ]
 }

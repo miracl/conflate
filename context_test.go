@@ -1,8 +1,9 @@
 package conflate
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRootContext_String(t *testing.T) {

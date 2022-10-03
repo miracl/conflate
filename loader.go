@@ -4,6 +4,7 @@ import (
 	ctx "context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	pkgurl "net/url"
@@ -15,6 +16,8 @@ import (
 
 	"cloud.google.com/go/storage"
 )
+
+const windowsOS = "windows"
 
 var (
 	goos        = runtime.GOOS
@@ -29,13 +32,16 @@ type loader struct {
 
 func (l *loader) loadURLsRecursive(parentUrls []pkgurl.URL, urls ...pkgurl.URL) (filedatas, error) {
 	var allData filedatas
+
 	for _, url := range urls {
 		data, err := l.loadURLRecursive(parentUrls, url)
 		if err != nil {
 			return nil, err
 		}
+
 		allData = append(allData, data...)
 	}
+
 	return allData, nil
 }
 
@@ -44,22 +50,27 @@ func (l *loader) loadURLRecursive(parentUrls []pkgurl.URL, url pkgurl.URL) (file
 	if err != nil {
 		return nil, err
 	}
+
 	fdata, err := l.newFiledata(data, url)
 	if err != nil {
 		return nil, err
 	}
+
 	return l.loadDatumRecursive(parentUrls, &url, fdata)
 }
 
 func (l *loader) loadDataRecursive(parentUrls []pkgurl.URL, data ...filedata) (filedatas, error) {
 	var allData filedatas
+
 	for _, datum := range data {
 		childData, err := l.loadDatumRecursive(parentUrls, nil, datum)
 		if err != nil {
 			return nil, err
 		}
+
 		allData = append(allData, childData...)
 	}
+
 	return allData, nil
 }
 
@@ -67,25 +78,34 @@ func (l *loader) loadDatumRecursive(parentUrls []pkgurl.URL, url *pkgurl.URL, da
 	if data.isEmpty() {
 		return nil, nil
 	}
+
 	if containsURL(url, parentUrls) {
 		return nil, makeError("The url recursively includes itself (%v)", url)
 	}
+
 	childUrls, err := toURLs(url, data.includes...)
 	if err != nil {
 		return nil, err
 	}
+
 	var newParentUrls []pkgurl.URL
+
 	newParentUrls = append(newParentUrls, parentUrls...)
+
 	if url != nil {
 		newParentUrls = append(newParentUrls, *url)
 	}
+
 	childData, err := l.loadURLsRecursive(newParentUrls, childUrls...)
 	if err != nil {
 		return nil, err
 	}
+
 	var allData filedatas
+
 	allData = append(allData, childData...)
 	allData = append(allData, data)
+
 	return allData, nil
 }
 
@@ -95,13 +115,16 @@ func (l *loader) wrapFiledata(bytes []byte) (filedata, error) {
 
 func (l *loader) wrapFiledatas(bytes ...[]byte) (filedatas, error) {
 	var fds []filedata
+
 	for _, b := range bytes {
 		fd, err := l.wrapFiledata(b)
 		if err != nil {
 			return nil, err
 		}
+
 		fds = append(fds, fd)
 	}
+
 	return fds, nil
 }
 
@@ -125,7 +148,11 @@ func loadURL(url pkgurl.URL) ([]byte, error) {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error when closing response body: %v", err.Error())
+		}
+	}()
 
 	data, err := ioutil.ReadAll(resp.Body)
 
@@ -140,21 +167,25 @@ func loadConfigFromBucket(url pkgurl.URL) ([]byte, error) {
 	bucket := url.Host
 	fileName := strings.TrimLeft(url.Path, "/")
 
-	ctx := ctx.Background()
+	context := ctx.Background()
 
-	client, err := storage.NewClient(ctx)
+	client, err := storage.NewClient(context)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create gcp storage client: %w", err)
 	}
 
 	bucketHandler := client.Bucket(bucket)
 
-	rc, err := bucketHandler.Object(fileName).NewReader(ctx)
+	rc, err := bucketHandler.Object(fileName).NewReader(context)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open file from bucket %q, file %q: %w", bucket, fileName, err)
 	}
 
-	defer rc.Close()
+	defer func() {
+		if err := rc.Close(); err != nil {
+			log.Printf("error when closing the bucket handler reader: %v", err.Error())
+		}
+	}()
 
 	slurp, err := ioutil.ReadAll(rc)
 	if err != nil {
@@ -165,31 +196,43 @@ func loadConfigFromBucket(url pkgurl.URL) ([]byte, error) {
 }
 
 func newTransport() *http.Transport {
+	const (
+		conns            = 100
+		timeout          = 30
+		handshakeTimeout = 10
+		idleConnTimeout  = 90
+	)
+
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   timeout * time.Second,
+			KeepAlive: timeout * time.Second,
 			DualStack: true,
 		}).DialContext,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
+		MaxIdleConns:          conns,
+		IdleConnTimeout:       idleConnTimeout * time.Second,
+		TLSHandshakeTimeout:   handshakeTimeout * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-	transport.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
+
+	transport.RegisterProtocol("file", http.NewFileTransport(http.Dir("/"))) //nolint:gosec // safe in this case
+
 	return transport
 }
 
 func toURLs(rootURL *pkgurl.URL, paths ...string) ([]pkgurl.URL, error) {
 	var urls []pkgurl.URL
+
 	for _, path := range paths {
 		url, err := toURL(rootURL, path)
 		if err != nil {
 			return nil, err
 		}
+
 		urls = append(urls, url)
 	}
+
 	return urls, nil
 }
 
@@ -197,21 +240,26 @@ func toURL(rootURL *pkgurl.URL, path string) (pkgurl.URL, error) {
 	if path == "" {
 		return emptyURL, makeError("The file path is blank")
 	}
+
 	var err error
+
 	if rootURL == nil {
 		rootURL, err = workingDir()
 		if err != nil {
 			return emptyURL, err
 		}
 	}
+
 	url, err := pkgurl.Parse(setPath(path))
 	if err != nil {
 		return emptyURL, wrapError(err, "Could not parse path")
 	}
+
 	if !url.IsAbs() {
 		url = rootURL.ResolveReference(url)
 		url.RawQuery = rootURL.RawQuery
 	}
+
 	return *url, nil
 }
 
@@ -219,11 +267,13 @@ func containsURL(searchURL *pkgurl.URL, urls []pkgurl.URL) bool {
 	if searchURL == nil {
 		return false
 	}
-	for _, url := range urls {
-		if url == *searchURL {
+
+	for _, u := range urls {
+		if u == *searchURL {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -232,33 +282,40 @@ func workingDir() (*pkgurl.URL, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	rootURL, err := pkgurl.Parse("file://" + setPath(rootPath) + "/")
 	if err != nil {
 		return nil, err
 	}
+
 	return rootURL, nil
 }
 
 func setPath(path string) string {
-	if goos == "windows" {
+	if goos == windowsOS {
 		// https://blogs.msdn.microsoft.com/ie/2006/12/06/file-uris-in-windows/
 		path = strings.Replace(path, `\`, `/`, -1)
 		path = strings.TrimLeft(path, `/`)
+
 		if driveLetter.MatchString(path) {
 			path = `/` + path
 		}
 	}
+
 	return path
 }
 
 func getPath(path string) string {
-	if goos == "windows" {
+	if goos == windowsOS {
 		// https://blogs.msdn.microsoft.com/ie/2006/12/06/file-uris-in-windows/
 		path = strings.TrimLeft(path, `/`)
+
 		if !driveLetter.MatchString(path) {
 			path = `//` + path
 		}
+
 		path = strings.Replace(path, `/`, `\`, -1)
 	}
+
 	return path
 }

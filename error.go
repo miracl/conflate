@@ -1,3 +1,4 @@
+//nolint:err113,goerr113,revive // errors in the lib need refactoring
 package conflate
 
 import (
@@ -18,6 +19,7 @@ func wrapError(err error, msg string, args ...interface{}) error {
 	if err == nil {
 		return nil
 	}
+
 	return makeError("%v : %v", makeError(msg, args...), err)
 }
 
