@@ -1,6 +1,8 @@
 package conflate
 
 import (
+	ctx "context"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -10,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"cloud.google.com/go/storage"
 )
 
 var (
@@ -109,17 +113,55 @@ func loadURL(url pkgurl.URL) ([]byte, error) {
 			return b, nil
 		}
 	}
+
+	if url.Scheme == "gs" {
+		return loadConfigFromBucket(url)
+	}
+
 	client := http.Client{Transport: newTransport()}
+
 	resp, err := client.Get(url.String())
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
+
 	data, err := ioutil.ReadAll(resp.Body)
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, makeError("Failed to load url : %v : %v", resp.StatusCode, url.String())
 	}
+
 	return data, err
+}
+
+func loadConfigFromBucket(url pkgurl.URL) ([]byte, error) {
+	bucket := url.Host
+	fileName := strings.TrimLeft(url.Path, "/")
+
+	ctx := ctx.Background()
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create gcp storage client: %w", err)
+	}
+
+	bucketHandler := client.Bucket(bucket)
+
+	rc, err := bucketHandler.Object(fileName).NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to open file from bucket %q, file %q: %w", bucket, fileName, err)
+	}
+
+	defer rc.Close()
+
+	slurp, err := ioutil.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read data from bucket %q, file %q: %w", bucket, fileName, err)
+	}
+
+	return slurp, nil
 }
 
 func newTransport() *http.Transport {
