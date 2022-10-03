@@ -1,9 +1,9 @@
 package conflate
 
 import (
-	"errors"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // --------
@@ -19,7 +19,7 @@ func TestJSONMarshalAll(t *testing.T) {
 
 func TestJSONMarshalAll_Error(t *testing.T) {
 	mockMarshal := func(obj interface{}) ([]byte, error) {
-		return nil, errors.New("my error")
+		return nil, errTest
 	}
 	data, err := jsonMarshalAll(mockMarshal, "a")
 	assert.NotNil(t, err)
@@ -31,6 +31,7 @@ func TestJSONMarshalAll_Error(t *testing.T) {
 
 func TestJSONMarshalUnmarshal(t *testing.T) {
 	var out interface{}
+
 	err := jsonMarshalUnmarshal(testMarshalData, &out)
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalData, out)
@@ -38,6 +39,7 @@ func TestJSONMarshalUnmarshal(t *testing.T) {
 
 func TestJSONMarshalUnmarshal_MarshalError(t *testing.T) {
 	var out interface{}
+
 	err := jsonMarshalUnmarshal(testMarshalDataInvalid, out)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "could not be marshalled to json")
@@ -53,6 +55,7 @@ func TestJSONMarshalUnmarshal_UnmarshalError(t *testing.T) {
 
 func TestJSONUnmarshal(t *testing.T) {
 	var out interface{}
+
 	err := JSONUnmarshal(testMarshalJSON, &out)
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalData, out)
@@ -60,6 +63,7 @@ func TestJSONUnmarshal(t *testing.T) {
 
 func TestJSONUnmarshal_Error(t *testing.T) {
 	var out interface{}
+
 	err := JSONUnmarshal(testMarshalInvalid, &out)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "could not be unmarshalled as json")
@@ -67,6 +71,7 @@ func TestJSONUnmarshal_Error(t *testing.T) {
 
 func TestYAMLUnmarshal(t *testing.T) {
 	var out interface{}
+
 	err := YAMLUnmarshal(testMarshalYAML, &out)
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalData, out)
@@ -74,6 +79,7 @@ func TestYAMLUnmarshal(t *testing.T) {
 
 func TestYAMLUnmarshal_Error(t *testing.T) {
 	var out interface{}
+
 	err := YAMLUnmarshal(testMarshalInvalid, &out)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "could not be unmarshalled as yaml")
@@ -81,6 +87,7 @@ func TestYAMLUnmarshal_Error(t *testing.T) {
 
 func TestTOMLUnmarshal(t *testing.T) {
 	var out interface{}
+
 	err := TOMLUnmarshal(testMarshalTOML, &out)
 	assert.Nil(t, err)
 	assert.Equal(t, testMarshalData, out)
@@ -88,6 +95,7 @@ func TestTOMLUnmarshal(t *testing.T) {
 
 func TestTOMLUnmarshal_Error(t *testing.T) {
 	var out interface{}
+
 	err := TOMLUnmarshal(testMarshalInvalid, &out)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "could not be unmarshalled as toml")

@@ -1,12 +1,14 @@
+// Package main constructs the conflate library main functionality.
 package main
 
 import (
 	"flag"
 	"fmt"
-	"github.com/miracl/conflate"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/miracl/conflate"
 )
 
 var version = "devel"
@@ -18,9 +20,10 @@ func failIfError(err error) {
 	}
 }
 
+//nolint:funlen // that's ok
 func main() {
-
 	var data dataFlag
+
 	flag.Var(&data, "data", "The path/url of JSON/YAML/TOML data, or 'stdin' to read from standard input")
 	schemaFile := flag.String("schema", "", "The path/url of a JSON v4 schema file")
 	defaults := flag.Bool("defaults", false, "Apply defaults from schema to data")
@@ -35,6 +38,7 @@ func main() {
 
 	if *showVersion {
 		fmt.Println(version)
+
 		return
 	}
 
@@ -54,6 +58,7 @@ func main() {
 		if d == "stdin" {
 			b, err := ioutil.ReadAll(os.Stdin)
 			failIfError(err)
+
 			err = c.AddData(b)
 			failIfError(err)
 		} else {
@@ -63,25 +68,31 @@ func main() {
 	}
 
 	var schema *conflate.Schema
+
 	if *schemaFile != "" {
 		s, err := conflate.NewSchemaFile(*schemaFile)
 		failIfError(err)
+
 		schema = s
 	}
+
 	if *defaults {
 		err := c.ApplyDefaults(schema)
 		failIfError(err)
 	}
+
 	if *validate {
 		err := c.Validate(schema)
 		failIfError(err)
 	}
+
 	if *format != "" {
 		var data interface{}
 		err := c.Unmarshal(&data)
 		failIfError(err)
 
 		var out []byte
+
 		switch strings.ToUpper(*format) {
 		case "JSON":
 			out, err = c.MarshalJSON()
@@ -90,8 +101,13 @@ func main() {
 		case "TOML":
 			out, err = c.MarshalTOML()
 		}
+
 		failIfError(err)
-		os.Stdout.Write(out)
+
+		_, err = os.Stdout.Write(out)
+		if err != nil {
+			fmt.Printf("err when formatting: %v", err.Error())
+		}
 	}
 }
 
@@ -103,5 +119,6 @@ func (f *dataFlag) String() string {
 
 func (f *dataFlag) Set(value string) error {
 	*f = append(*f, value)
+
 	return nil
 }
