@@ -15,7 +15,7 @@ func testFiledataNew(t *testing.T, data []byte, path string) (filedata, error) {
 	url, err := pkgurl.Parse(path)
 	assert.Nil(t, err)
 
-	return newFiledata(data, *url)
+	return newFiledata(data, url)
 }
 
 func testFiledataNewAssert(t *testing.T, data []byte, path string) filedata {

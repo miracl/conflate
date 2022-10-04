@@ -51,7 +51,7 @@ func TestWorkingDir(t *testing.T) {
 func TestToURL_Error(t *testing.T) {
 	urlPath, err := toURL(&emptyURL, "\\^&%")
 	assert.NotNil(t, err)
-	assert.Equal(t, urlPath, emptyURL)
+	assert.Equal(t, urlPath, &emptyURL)
 }
 
 func TestToURL_Blank(t *testing.T) {
@@ -167,7 +167,7 @@ func TestToURLs(t *testing.T) {
 // --------
 
 func TestLoadURLError(t *testing.T) {
-	data, err := loadURL(url.URL{})
+	data, err := loadURL(&url.URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
@@ -232,7 +232,7 @@ func TestLoadURL(t *testing.T) {
 	u, err := url.Parse("http://0.0.0.0:9999/valid_parent.json")
 	assert.Nil(t, err)
 
-	data, err := loadURL(*u)
+	data, err := loadURL(u)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.Contains(t, string(data), "parent")
@@ -256,7 +256,7 @@ func TestLoadURL_Relative(t *testing.T) {
 var testLoader = loader{newFiledata: newFiledata}
 
 func TestLoadURLsRecursive_LoadError(t *testing.T) {
-	data, err := testLoader.loadURLsRecursive(nil, url.URL{})
+	data, err := testLoader.loadURLsRecursive(nil, &url.URL{})
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 }
