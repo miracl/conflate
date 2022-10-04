@@ -8,7 +8,7 @@ import (
 )
 
 type filedata struct {
-	url      pkgurl.URL
+	url      *pkgurl.URL
 	data     []byte
 	obj      map[string]interface{}
 	includes []string
@@ -39,7 +39,7 @@ var Unmarshallers = UnmarshallerMap{
 	"":      {JSONUnmarshal, YAMLUnmarshal, TOMLUnmarshal},
 }
 
-func newFiledata(data []byte, url pkgurl.URL) (filedata, error) {
+func newFiledata(data []byte, url *pkgurl.URL) (filedata, error) {
 	fd := filedata{data: data, url: url}
 
 	err := fd.unmarshal()
@@ -60,12 +60,12 @@ func newFiledata(data []byte, url pkgurl.URL) (filedata, error) {
 	return fd, nil
 }
 
-func newExpandedFiledata(data []byte, url pkgurl.URL) (filedata, error) {
+func newExpandedFiledata(data []byte, url *pkgurl.URL) (filedata, error) {
 	return newFiledata(recursiveExpand(data), url)
 }
 
 func (fd *filedata) wrapError(err error) error {
-	if fd.url == emptyURL {
+	if fd == nil || fd.url == nil || *fd.url == emptyURL {
 		return err
 	}
 

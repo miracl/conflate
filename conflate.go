@@ -37,7 +37,7 @@ func FromFiles(paths ...string) (*Conflate, error) {
 }
 
 // FromURLs constructs a new Conflate instance populated with the data from the given URLs.
-func FromURLs(urls ...url.URL) (*Conflate, error) {
+func FromURLs(urls ...*url.URL) (*Conflate, error) {
 	c := New()
 
 	err := c.AddURLs(urls...)
@@ -92,7 +92,7 @@ func (c *Conflate) AddFiles(paths ...string) error {
 }
 
 // AddURLs recursively merges the data from the given urls into the Conflate instance.
-func (c *Conflate) AddURLs(urls ...url.URL) error {
+func (c *Conflate) AddURLs(urls ...*url.URL) error {
 	data, err := c.loader.loadURLsRecursive(nil, urls...)
 	if err != nil {
 		return err

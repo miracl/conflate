@@ -34,10 +34,10 @@ func NewSchemaFile(path string) (*Schema, error) {
 }
 
 // NewSchemaURL loads a JSON v4 schema from the given URL.
-func NewSchemaURL(url url.URL) (*Schema, error) {
-	data, err := loadURL(url)
+func NewSchemaURL(u *url.URL) (*Schema, error) {
+	data, err := loadURL(u)
 	if err != nil {
-		return nil, wrapError(err, "Failed to load schema url %v", url)
+		return nil, wrapError(err, "Failed to load schema url %v", u)
 	}
 
 	return NewSchemaData(data)
