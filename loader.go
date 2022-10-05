@@ -2,6 +2,7 @@ package conflate
 
 import (
 	ctx "context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -24,6 +25,10 @@ var (
 	emptyURL    = pkgurl.URL{}
 	getwd       = os.Getwd
 	driveLetter = regexp.MustCompile(`^[A-Za-z]:.*$`)
+
+	errBlankFilePath = errors.New("the file path is blank")
+	errFailedToLoad  = errors.New("failed to load url")
+	errRecursiveURL  = errors.New("the url recursively includes itself")
 )
 
 type loader struct {
@@ -82,7 +87,7 @@ func (l *loader) loadDatumRecursive(parentUrls []*pkgurl.URL, url *pkgurl.URL, d
 	}
 
 	if containsURL(url, parentUrls) {
-		return nil, makeError("The url recursively includes itself (%v)", url)
+		return nil, fmt.Errorf("%w (%v)", errRecursiveURL, url)
 	}
 
 	childUrls, err := toURLs(url, data.includes...)
@@ -159,7 +164,7 @@ func loadURL(url *pkgurl.URL) ([]byte, error) {
 	data, err := ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, makeError("Failed to load url : %v : %v", resp.StatusCode, url.String())
+		return nil, fmt.Errorf("%w : %v : %v", errFailedToLoad, resp.StatusCode, url.String())
 	}
 
 	return data, err
@@ -240,7 +245,7 @@ func toURLs(rootURL *pkgurl.URL, paths ...string) ([]*pkgurl.URL, error) {
 
 func toURL(rootURL *pkgurl.URL, path string) (*pkgurl.URL, error) {
 	if path == "" {
-		return &emptyURL, makeError("The file path is blank")
+		return &emptyURL, errBlankFilePath
 	}
 
 	var err error
@@ -254,7 +259,7 @@ func toURL(rootURL *pkgurl.URL, path string) (*pkgurl.URL, error) {
 
 	url, err := pkgurl.Parse(setPath(path))
 	if err != nil {
-		return &emptyURL, wrapError(err, "Could not parse path")
+		return &emptyURL, fmt.Errorf("could not parse path: %w", err)
 	}
 
 	if !url.IsAbs() {

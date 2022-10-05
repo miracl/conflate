@@ -156,7 +156,7 @@ func TestMerge_IntToSliceInvalid(t *testing.T) {
 	toData := make([]int, 0)
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The destination type ([]int) must be the same as the source type (int)")
+	assert.Contains(t, err.Error(), "the destination type ([]int) must be the same as the source type (int)")
 }
 
 func TestMerge_IntToMapInvalid(t *testing.T) {
@@ -164,7 +164,7 @@ func TestMerge_IntToMapInvalid(t *testing.T) {
 	toData := make(map[string]int)
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The destination type (map[string]int) must be the same as the source type (int)")
+	assert.Contains(t, err.Error(), "the destination type (map[string]int) must be the same as the source type (int)")
 }
 
 func TestMerge_BadPropertyMerge(t *testing.T) {
@@ -172,7 +172,7 @@ func TestMerge_BadPropertyMerge(t *testing.T) {
 	fromData := map[string]interface{}{"x": map[string]string{}}
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to merge object property")
+	assert.Contains(t, err.Error(), "failed to merge object property")
 }
 
 func TestMerge_Equal(t *testing.T) {

@@ -40,7 +40,7 @@ func TestFiledata_WrapError(t *testing.T) {
 	err = fd.wrapError(errTest)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "my error")
-	assert.Contains(t, err.Error(), "Error processing myurl")
+	assert.Contains(t, err.Error(), "error processing myurl")
 }
 
 func TestFiledata_WrapErrorBlank(t *testing.T) {
@@ -178,7 +178,7 @@ func TestFiledata_ExtractError(t *testing.T) {
 
 	_, err := testLoader.wrapFiledata([]byte(`{"includes": "not array"}`))
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not extract includes")
+	assert.Contains(t, err.Error(), "could not extract includes")
 }
 
 func TestFiledata_IncludesError(t *testing.T) {

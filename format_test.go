@@ -18,11 +18,10 @@ func TestFormatErrors_Get(t *testing.T) {
 
 	defer func() { formatErrs.clear() }()
 
-	errExpected := makeError("An error")
-	formatErrs["name#value"] = errExpected
+	formatErrs["name#value"] = errTest
 
 	err := formatErrs.get("name", "value")
-	assert.Equal(t, errExpected, err)
+	assert.Equal(t, errTest, err)
 }
 
 func TestFormatErrors_Add(t *testing.T) {
@@ -30,10 +29,8 @@ func TestFormatErrors_Add(t *testing.T) {
 
 	defer func() { formatErrs.clear() }()
 
-	errExpected := makeError("An error")
-
-	formatErrs.add("name", "value", errExpected)
-	assert.Equal(t, errExpected, formatErrs["name#value"])
+	formatErrs.add("name", "value", errTest)
+	assert.Equal(t, errTest, formatErrs["name#value"])
 }
 
 func TestFormatErrors_Clear(t *testing.T) {
@@ -64,7 +61,7 @@ func TestXmlFormatCheckerIsFormat_NotString(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The value is not a string")
+	assert.Contains(t, err.Error(), "the value is not a string")
 }
 
 func TestXmlFormatCheckerIsFormat_Valid(t *testing.T) {
@@ -101,7 +98,7 @@ func TestXmlFormatCheckerIsFormat_NotValid(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to parse xml")
+	assert.Contains(t, err.Error(), "failed to parse xml")
 }
 
 // --------
@@ -122,7 +119,7 @@ func TestXmlTemplateFormatCheckerIsFormat_NotString(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The value is not a string")
+	assert.Contains(t, err.Error(), "the value is not a string")
 }
 
 func TestXmlTemplateFormatCheckerIsFormat_Valid(t *testing.T) {
@@ -159,7 +156,7 @@ func TestXmlTemplateFormatCheckerIsFormat_NotValid(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to parse xml")
+	assert.Contains(t, err.Error(), "failed to parse xml")
 }
 
 // --------
@@ -180,7 +177,7 @@ func TestHtmlFormatCheckerIsFormat_NotString(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The value is not a string")
+	assert.Contains(t, err.Error(), "the value is not a string")
 }
 
 func TestHtmlFormatCheckerIsFormat_Valid(t *testing.T) {
@@ -234,7 +231,7 @@ func testCryptoFormatCheckerIsFormatNotString(t *testing.T, cryptoType cryptoTyp
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The value is not a string")
+	assert.Contains(t, err.Error(), "the value is not a string")
 }
 
 func TestCryptoFormatCheckerIsFormat_NotString(t *testing.T) {
@@ -261,7 +258,7 @@ func testCryptoFormatCheckerIsFormatNotValid(t *testing.T, cryptoType cryptoType
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to parse")
+	assert.Contains(t, err.Error(), "failed to parse")
 }
 
 func TestCryptoFormatCheckerIsFormat_NotValid(t *testing.T) {
@@ -469,7 +466,7 @@ func TestCryptoFormatCheckerIsFormat_NotBase64(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to decode the data")
+	assert.Contains(t, err.Error(), "failed to decode the data")
 }
 
 func TestCryptoFormatCheckerIsFormat_UnsupportedType(t *testing.T) {
@@ -508,7 +505,7 @@ func TestRegexFormatCheckerIsFormat_NotString(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The value is not a string")
+	assert.Contains(t, err.Error(), "the value is not a string")
 }
 
 func TestRegexFormatCheckerIsFormat_Valid(t *testing.T) {
@@ -545,5 +542,5 @@ func TestRegexFormatCheckerIsFormat_NotValid(t *testing.T) {
 
 	err := formatErrs.get(name, givenValue)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to parse regular expression")
+	assert.Contains(t, err.Error(), "failed to parse regular expression")
 }
