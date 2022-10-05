@@ -1,4 +1,3 @@
-//nolint:err113,goerr113,revive // errors in the lib need refactoring
 package conflate
 
 import (
@@ -7,22 +6,11 @@ import (
 
 type context string
 
-func makeError(msg string, args ...interface{}) error {
-	return fmt.Errorf(msg, args...)
+type errWithContext struct {
+	msg     string
+	context context
 }
 
-func makeContextError(ctx context, msg string, args ...interface{}) error {
-	return makeError("%v (%v)", makeError(msg, args...), ctx)
-}
-
-func wrapError(err error, msg string, args ...interface{}) error {
-	if err == nil {
-		return nil
-	}
-
-	return makeError("%v : %v", makeError(msg, args...), err)
-}
-
-func detailError(err error, msg string, args ...interface{}) error {
-	return makeError("%v. %v", err, makeError(msg, args...))
+func (e errWithContext) Error() string {
+	return fmt.Sprintf("%v (%v)", e.msg, e.context)
 }

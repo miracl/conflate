@@ -24,7 +24,7 @@ func TestJSONMarshalAll_Error(t *testing.T) {
 	data, err := jsonMarshalAll(mockMarshal, "a")
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
-	assert.Contains(t, err.Error(), "The data could not be marshalled")
+	assert.Contains(t, err.Error(), "the data could not be marshalled")
 }
 
 // --------

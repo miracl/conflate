@@ -17,7 +17,7 @@ import (
 func TestWorkingDir_NoRootPath(t *testing.T) {
 	oldGetwd := getwd
 	getwd = func() (dir string, err error) {
-		return "", makeError("No root error")
+		return "", errTest
 	}
 
 	defer func() { getwd = oldGetwd }()
@@ -57,7 +57,7 @@ func TestToURL_Error(t *testing.T) {
 func TestToURL_Blank(t *testing.T) {
 	_, err := toURL(nil, "")
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The file path is blank")
+	assert.Contains(t, err.Error(), "the file path is blank")
 }
 
 func TestToURL_RelativePathCwd(t *testing.T) {
@@ -272,7 +272,7 @@ func TestLoadURLsRecursive_IncludesError(t *testing.T) {
 
 	data, err := testLoader.loadURLsRecursive(nil, u)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not unmarshal")
+	assert.Contains(t, err.Error(), "could not unmarshal")
 	assert.Nil(t, data)
 }
 
@@ -287,7 +287,7 @@ func TestLoadURLsRecursive_BadUrlInInclude(t *testing.T) {
 
 	data, err := testLoader.loadURLsRecursive(nil, u)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not parse path")
+	assert.Contains(t, err.Error(), "could not parse path")
 	assert.Nil(t, data)
 }
 
@@ -302,7 +302,7 @@ func TestLoadURLsRecursive_MissingFileInInclude(t *testing.T) {
 
 	data, err := testLoader.loadURLsRecursive(nil, u)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to load url")
+	assert.Contains(t, err.Error(), "failed to load url")
 	assert.Nil(t, data)
 }
 
@@ -317,7 +317,7 @@ func TestLoadURLsRecursive_RecursiveInclude(t *testing.T) {
 
 	data, err := testLoader.loadURLsRecursive(nil, u)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The url recursively includes itself")
+	assert.Contains(t, err.Error(), "the url recursively includes itself")
 	assert.Nil(t, data)
 }
 

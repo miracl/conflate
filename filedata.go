@@ -1,6 +1,7 @@
 package conflate
 
 import (
+	"fmt"
 	pkgurl "net/url"
 	"os"
 	"path/filepath"
@@ -65,11 +66,11 @@ func newExpandedFiledata(data []byte, url *pkgurl.URL) (filedata, error) {
 }
 
 func (fd *filedata) wrapError(err error) error {
-	if fd == nil || fd.url == nil || *fd.url == emptyURL {
+	if fd == nil || fd.url == nil || *fd.url == emptyURL || err == nil {
 		return err
 	}
 
-	return wrapError(err, "Error processing %v", fd.url.String())
+	return fmt.Errorf("error processing %v: %w", fd.url.String(), err)
 }
 
 func (fd *filedata) validate() error {
@@ -84,7 +85,7 @@ func (fd *filedata) unmarshal() error {
 		unmarshallers = Unmarshallers[""]
 	}
 
-	err := makeError("Could not unmarshal data")
+	var err error
 
 	for _, unmarshal := range unmarshallers {
 		uerr := unmarshal(fd.data, &fd.obj)
@@ -92,7 +93,7 @@ func (fd *filedata) unmarshal() error {
 			return nil
 		}
 
-		err = wrapError(uerr, err.Error())
+		err = fmt.Errorf("could not unmarshal data: %w", uerr)
 	}
 
 	return err
@@ -105,7 +106,7 @@ func (fd *filedata) extractIncludes() error {
 
 	err := jsonMarshalUnmarshal(fd.obj[Includes], &fd.includes)
 	if err != nil {
-		return wrapError(err, "Could not extract includes")
+		return fmt.Errorf("could not extract includes: %w", err)
 	}
 
 	delete(fd.obj, Includes)

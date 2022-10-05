@@ -5,12 +5,18 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
 	"golang.org/x/net/html"
+)
+
+var (
+	errRequiredString  = errors.New("the value is not a string")
+	errUnsupportedType = errors.New("called with unsupported type")
 )
 
 func initFormatCheckers() {
@@ -59,17 +65,18 @@ func newXMLFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 }
 
 func (f xmlFormatChecker) IsFormat(input interface{}) bool {
-	var err error
+	var ferr error
 
 	if s, ok := input.(string); ok {
-		err = xml.Unmarshal([]byte(s), new(interface{}))
-		err = wrapError(err, "Failed to parse xml")
+		if err := xml.Unmarshal([]byte(s), new(interface{})); err != nil {
+			ferr = fmt.Errorf("failed to parse xml: %w", err)
+		}
 	} else {
-		err = makeError("The value is not a string")
+		ferr = errRequiredString
 	}
 
-	if err != nil {
-		formatErrs.add(f.name, input, err)
+	if ferr != nil {
+		formatErrs.add(f.name, input, ferr)
 
 		return false
 	}
@@ -89,21 +96,22 @@ func newXMLTemplateFormatChecker(name string) (string, gojsonschema.FormatChecke
 }
 
 func (f xmlTemplateFormatChecker) IsFormat(input interface{}) bool {
-	var err error
+	var ferr error
 
 	if s, ok := input.(string); ok {
 		s = f.tags.ReplaceAllString(s, "")
 		if len(s) > 0 {
 			var v interface{}
-			err = xml.Unmarshal([]byte(s), &v)
-			err = wrapError(err, "Failed to parse xml")
+			if err := xml.Unmarshal([]byte(s), &v); err != nil {
+				ferr = fmt.Errorf("failed to parse xml: %w", err)
+			}
 		}
 	} else {
-		err = makeError("The value is not a string")
+		ferr = errRequiredString
 	}
 
-	if err != nil {
-		formatErrs.add(f.name, input, err)
+	if ferr != nil {
+		formatErrs.add(f.name, input, ferr)
 
 		return false
 	}
@@ -123,18 +131,20 @@ func newHTMLFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 }
 
 func (f htmlFormatChecker) IsFormat(input interface{}) bool {
-	var err error
+	var ferr error
 
 	if s, ok := input.(string); ok {
 		s = f.tags.ReplaceAllString(s, "")
-		_, err = html.Parse(strings.NewReader(s))
-		err = wrapError(err, "Failed to parse html")
+
+		if _, err := html.Parse(strings.NewReader(s)); err != nil {
+			ferr = fmt.Errorf("failed to parse html: %w", err)
+		}
 	} else {
-		err = makeError("The value is not a string")
+		ferr = errRequiredString
 	}
 
-	if err != nil {
-		formatErrs.add(f.name, input, err)
+	if ferr != nil {
+		formatErrs.add(f.name, input, ferr)
 
 		return false
 	}
@@ -169,7 +179,7 @@ func newCryptoFormatChecker(name string, cType cryptoType) (string, gojsonschema
 func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
 	s, ok := input.(string)
 	if !ok {
-		formatErrs.add(f.name, input, makeError("The value is not a string"))
+		formatErrs.add(f.name, input, errRequiredString)
 
 		return false
 	}
@@ -185,7 +195,7 @@ func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
 		// Try to directly base64 decode if not valid PEM
 		data, err = base64.StdEncoding.DecodeString(s)
 		if err != nil {
-			formatErrs.add(f.name, input, wrapError(err, "Failed to decode the data"))
+			formatErrs.add(f.name, input, fmt.Errorf("failed to decode the data: %w", err))
 
 			return false
 		}
@@ -203,11 +213,11 @@ func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
 	case x509Certificate:
 		_, err = x509.ParseCertificate(data)
 	default:
-		err = makeError(f.name + " called with unsupported type")
+		err = fmt.Errorf("%v %w", f.name, errUnsupportedType)
 	}
 
 	if err != nil {
-		formatErrs.add(f.name, input, wrapError(err, "Failed to parse key"))
+		formatErrs.add(f.name, input, fmt.Errorf("failed to parse key: %w", err))
 
 		return false
 	}
@@ -225,17 +235,18 @@ func newRegexFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 }
 
 func (f regexFormatChecker) IsFormat(input interface{}) bool {
-	var err error
+	var ferr error
 
 	if s, ok := input.(string); ok {
-		_, err = regexp.Compile(s)
-		err = wrapError(err, "Failed to parse regular expression")
+		if _, err := regexp.Compile(s); err != nil {
+			ferr = fmt.Errorf("failed to parse regular expression: %w", err)
+		}
 	} else {
-		err = makeError("The value is not a string")
+		ferr = errRequiredString
 	}
 
-	if err != nil {
-		formatErrs.add(f.name, input, err)
+	if ferr != nil {
+		formatErrs.add(f.name, input, ferr)
 
 		return false
 	}

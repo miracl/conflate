@@ -9,25 +9,25 @@ import (
 func TestSchema_NewSchemaBadUrl(t *testing.T) {
 	_, err := NewSchemaFile(`!"£$%^&*()`)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to obtain url to schema file")
+	assert.Contains(t, err.Error(), "failed to obtain url to schema file")
 }
 
 func TestSchema_NewSchemaMissingError(t *testing.T) {
 	_, err := NewSchemaFile("missing file")
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to load schema url")
+	assert.Contains(t, err.Error(), "failed to load schema url")
 }
 
 func TestSchema_NewSchemaBadJsonError(t *testing.T) {
 	_, err := NewSchemaFile("conflate.go")
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Schema is not valid json")
+	assert.Contains(t, err.Error(), "schema is not valid json")
 }
 
 func TestSchema_NewSchemaBadSchemaError(t *testing.T) {
 	_, err := NewSchemaFile("testdata/bad.schema.json")
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The schema is not valid against the meta-schema")
+	assert.Contains(t, err.Error(), "the schema is not valid against the meta-schema")
 }
 
 func TestSchema_NewSchema(t *testing.T) {
@@ -85,7 +85,7 @@ func TestNewSchemaGo_ValidateSchemaInvalidMetaData(t *testing.T) {
 	s, err := NewSchemaGo(schema)
 	assert.Nil(t, s)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not load json meta-schema")
+	assert.Contains(t, err.Error(), "could not load json meta-schema")
 }
 
 func TestUpdateMetaSchema_InvalidSchema(t *testing.T) {
@@ -93,7 +93,7 @@ func TestUpdateMetaSchema_InvalidSchema(t *testing.T) {
 
 	_, err := updateMetaSchema(schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Invalid schema structure")
+	assert.Contains(t, err.Error(), "invalid schema structure")
 }
 
 func TestUpdateMetaSchema_DefaultDraft(t *testing.T) {
@@ -139,7 +139,7 @@ func TestNewSchemaGo_ValidateInvalidSchema(t *testing.T) {
 	s, err := NewSchemaGo("test")
 	assert.Nil(t, s)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Schema validation failed")
+	assert.Contains(t, err.Error(), "schema validation failed")
 }
 
 func TestValidate(t *testing.T) {
@@ -183,7 +183,7 @@ func TestValidate_NotValid(t *testing.T) {
 
 	err = validate(data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The document is not valid against the schema")
+	assert.Contains(t, err.Error(), "the document is not valid against the schema")
 	assert.Contains(t, err.Error(), "Invalid type. Expected: string, given: integer")
 	assert.Contains(t, err.Error(), "(#/obj/str)")
 }
@@ -206,7 +206,7 @@ func TestValidate_CustomFormatError(t *testing.T) {
 
 	err = validate(data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The document is not valid against the schema")
+	assert.Contains(t, err.Error(), "the document is not valid against the schema")
 	assert.Contains(t, err.Error(), "Does not match format")
 	assert.Contains(t, err.Error(), "(#/str)")
 }
@@ -217,7 +217,7 @@ func TestApplyDefaults_DataNil(t *testing.T) {
 	schema := map[string]interface{}{}
 	err := applyDefaults(nil, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Destination value must not be nil")
+	assert.Contains(t, err.Error(), "destination value must not be nil")
 }
 
 func TestApplyDefaults_DataNotPtr(t *testing.T) {
@@ -226,7 +226,7 @@ func TestApplyDefaults_DataNotPtr(t *testing.T) {
 	schema := map[string]interface{}{}
 	err := applyDefaults(data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Destination value must be a pointer")
+	assert.Contains(t, err.Error(), "destination value must be a pointer")
 }
 
 func TestApplyDefaults_SchemaNotMap(t *testing.T) {
@@ -253,7 +253,7 @@ func TestApplyDefaults_NodeNotObject(t *testing.T) {
 	schema := map[string]interface{}{"type": "object"}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Node should be an 'object'")
+	assert.Contains(t, err.Error(), "node should be an 'object'")
 }
 
 func TestApplyDefaults_ObjectDefault(t *testing.T) {
@@ -378,8 +378,8 @@ func TestApplyDefaults_ObjectPropertyFailed(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to apply defaults to object property")
-	assert.Contains(t, err.Error(), "Schema section is not a map (#/val)")
+	assert.Contains(t, err.Error(), "failed to apply defaults to object property")
+	assert.Contains(t, err.Error(), "schema section is not a map (#/val)")
 }
 
 func TestApplyDefaults_ObjectAdditionalPropertyDefault(t *testing.T) {
@@ -404,7 +404,7 @@ func TestApplyDefaults_ObjectAdditionalPropertyFailed(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to apply defaults to additional object property")
+	assert.Contains(t, err.Error(), "failed to apply defaults to additional object property")
 	assert.Contains(t, err.Error(), "Schema section does not have a valid 'type' attribute")
 }
 
@@ -485,7 +485,7 @@ func TestApplyDefaults_NodeNotSlice(t *testing.T) {
 	schema := map[string]interface{}{"type": "array"}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Node should be an 'array'", err.Error())
+	assert.Contains(t, err.Error(), "node should be an 'array'", err.Error())
 }
 
 func TestApplyDefaults_SliceDefault(t *testing.T) {
@@ -542,7 +542,7 @@ func TestApplyDefaults_SliceFailed(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to apply defaults to array item")
+	assert.Contains(t, err.Error(), "failed to apply defaults to array item")
 	assert.Contains(t, err.Error(), "Schema section does not have a valid 'type' attribute (#[0])")
 }
 
@@ -657,7 +657,7 @@ func TestApplyDefaults_RefNotStringError(t *testing.T) {
 
 	err = applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Reference is not a string")
+	assert.Contains(t, err.Error(), "reference is not a string")
 }
 
 func TestApplyDefaults_RefInvalidError(t *testing.T) {
@@ -682,7 +682,7 @@ func TestApplyDefaults_RefInvalidError(t *testing.T) {
 
 	err = applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Invalid reference")
+	assert.Contains(t, err.Error(), "invalid reference")
 }
 
 func TestApplyDefaults_RefPointerError(t *testing.T) {
@@ -707,7 +707,7 @@ func TestApplyDefaults_RefPointerError(t *testing.T) {
 
 	err = applyDefaults(&data, schema)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Cannot find reference")
+	assert.Contains(t, err.Error(), "cannot find reference")
 }
 
 func TestApplyDefaults_OneOfWithValidType(t *testing.T) {

@@ -3,10 +3,14 @@ package conflate
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/BurntSushi/toml"
 	"github.com/ghodss/yaml"
 )
+
+var errToml = errors.New("the data could not be marshalled to toml")
 
 func jsonMarshalAll(data ...interface{}) ([][]byte, error) {
 	var outs [][]byte
@@ -14,7 +18,7 @@ func jsonMarshalAll(data ...interface{}) ([][]byte, error) {
 	for i, datum := range data {
 		out, err := jsonMarshal(datum)
 		if err != nil {
-			return nil, wrapError(err, "Could not marshal data %v", i)
+			return nil, fmt.Errorf("could not marshal data %v: %w", i, err)
 		}
 
 		outs = append(outs, out)
@@ -36,7 +40,7 @@ func jsonMarshalUnmarshal(in, out interface{}) error {
 func JSONUnmarshal(data []byte, out interface{}) error {
 	err := json.Unmarshal(data, out)
 	if err != nil {
-		return wrapError(err, "The data could not be unmarshalled as json")
+		return fmt.Errorf("the data could not be unmarshalled as json: %w", err)
 	}
 
 	return nil
@@ -46,7 +50,7 @@ func JSONUnmarshal(data []byte, out interface{}) error {
 func YAMLUnmarshal(data []byte, out interface{}) error {
 	err := yaml.Unmarshal(data, out)
 	if err != nil {
-		return wrapError(err, "The data could not be unmarshalled as yaml")
+		return fmt.Errorf("the data could not be unmarshalled as yaml: %w", err)
 	}
 
 	return nil
@@ -56,7 +60,7 @@ func YAMLUnmarshal(data []byte, out interface{}) error {
 func TOMLUnmarshal(data []byte, out interface{}) error {
 	err := toml.Unmarshal(data, out)
 	if err != nil {
-		return wrapError(err, "The data could not be unmarshalled as toml")
+		return fmt.Errorf("the data could not be unmarshalled as toml: %w", err)
 	}
 
 	return nil
@@ -70,7 +74,7 @@ func jsonMarshal(data interface{}) ([]byte, error) {
 
 	err := encoder.Encode(data)
 	if err != nil {
-		return nil, wrapError(err, "The data could not be marshalled to json")
+		return nil, fmt.Errorf("the data could not be marshalled to json: %w", err)
 	}
 
 	return buffer.Bytes(), nil
@@ -79,7 +83,7 @@ func jsonMarshal(data interface{}) ([]byte, error) {
 func yamlMarshal(in interface{}) ([]byte, error) {
 	data, err := yaml.Marshal(in)
 	if err != nil {
-		return nil, wrapError(err, "The data could not be marshalled to yaml")
+		return nil, fmt.Errorf("the data could not be marshalled to yaml: %w", err)
 	}
 
 	return data, nil
@@ -87,8 +91,8 @@ func yamlMarshal(in interface{}) ([]byte, error) {
 
 func tomlMarshal(in interface{}) (out []byte, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = wrapError(makeError("%v", r), "The data could not be marshalled to toml")
+		if isPanicking := recover(); isPanicking != nil {
+			err = fmt.Errorf("%w : %v", errToml, isPanicking)
 		}
 	}()
 
@@ -97,7 +101,7 @@ func tomlMarshal(in interface{}) (out []byte, err error) {
 
 	err = enc.Encode(in)
 	if err != nil {
-		return nil, wrapError(err, "The data could not be marshalled to toml")
+		return nil, fmt.Errorf("the data could not be marshalled to toml: %w", err)
 	}
 
 	out = buf.Bytes()

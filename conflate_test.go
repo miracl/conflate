@@ -169,39 +169,39 @@ func TestFromURLs_Error(t *testing.T) {
 	c, err := FromURLs(url)
 	assert.NotNil(t, err)
 	assert.Nil(t, c)
-	assert.Contains(t, err.Error(), "Failed to load url")
+	assert.Contains(t, err.Error(), "failed to load url")
 }
 
 func TestFromFiles_Error(t *testing.T) {
 	c, err := FromFiles("missing file")
 	assert.NotNil(t, err)
 	assert.Nil(t, c)
-	assert.Contains(t, err.Error(), "Failed to load url")
+	assert.Contains(t, err.Error(), "failed to load url")
 }
 
 func TestFromFiles_WorkingDirError(t *testing.T) {
 	oldGetwd := getwd
 	getwd = func() (dir string, err error) {
-		return "", makeError("No root error")
+		return "", errTest
 	}
 
 	defer func() { getwd = oldGetwd }()
 
 	_, err := FromFiles("some file")
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "No root error")
+	assert.Contains(t, err.Error(), errTest.Error())
 }
 
 func TestFromFiles_ToUrlsError(t *testing.T) {
 	_, err := FromFiles("testdata/bad_url_in_include.json")
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not parse path")
+	assert.Contains(t, err.Error(), "could not parse path")
 }
 
 func TestFromFiles_ExpandError(t *testing.T) {
 	_, err := FromFiles("testdata/missing_file_in_include.json")
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to load url")
+	assert.Contains(t, err.Error(), "failed to load url")
 }
 
 func TestFromFiles_ValidationNoSchemaError(t *testing.T) {
@@ -210,7 +210,7 @@ func TestFromFiles_ValidationNoSchemaError(t *testing.T) {
 
 	err = c.Validate(nil)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Schema is not set")
+	assert.Contains(t, err.Error(), "schema is not set")
 }
 
 func TestFromFiles_ValidationError(t *testing.T) {
@@ -222,7 +222,7 @@ func TestFromFiles_ValidationError(t *testing.T) {
 
 	err = c.Validate(s)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Schema validation failed")
+	assert.Contains(t, err.Error(), "schema validation failed")
 }
 
 func TestFromFiles_ValidationOk(t *testing.T) {
@@ -242,7 +242,7 @@ func TestFromFiles_ApplyDefaultsNoSchema(t *testing.T) {
 
 	err = c.ApplyDefaults(nil)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Schema is not set")
+	assert.Contains(t, err.Error(), "schema is not set")
 }
 
 func TestFromFiles_ApplyDefaultsError(t *testing.T) {
@@ -255,8 +255,8 @@ func TestFromFiles_ApplyDefaultsError(t *testing.T) {
 	s.s = []interface{}{"not a map"}
 	err = c.ApplyDefaults(s)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The defaults could not be applied")
-	assert.Contains(t, err.Error(), "Schema section is not a map")
+	assert.Contains(t, err.Error(), "the defaults could not be applied")
+	assert.Contains(t, err.Error(), "schema section is not a map")
 }
 
 func TestFromFiles_ApplyDefaults(t *testing.T) {
@@ -291,13 +291,13 @@ func TestFromData_Error(t *testing.T) {
 	c, err := FromData([]byte("{bad data"))
 	assert.NotNil(t, err)
 	assert.Nil(t, c)
-	assert.Contains(t, err.Error(), "Could not unmarshal data")
+	assert.Contains(t, err.Error(), "could not unmarshal data")
 }
 
 func TestFromData_MergeToError(t *testing.T) {
 	_, err := FromData([]byte(`{ "x": [1]}`), []byte(`{ "x": {"y": 1}}`))
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to merge object property")
+	assert.Contains(t, err.Error(), "failed to merge object property")
 }
 
 func TestFromGo(t *testing.T) {
@@ -315,7 +315,7 @@ func TestFromGo(t *testing.T) {
 func TestFromGo_MarshalError(t *testing.T) {
 	_, err := FromGo(make(chan int))
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "The data could not be marshalled to json")
+	assert.Contains(t, err.Error(), "the data could not be marshalled to json")
 }
 
 func TestFromGo_MergeToError(t *testing.T) {
@@ -323,7 +323,7 @@ func TestFromGo_MergeToError(t *testing.T) {
 	y := struct{ X map[string]int }{X: map[string]int{"Y": 1}}
 	_, err := FromGo(x, y)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to merge object property")
+	assert.Contains(t, err.Error(), "failed to merge object property")
 }
 
 func TestConflate_MarshalJSON(t *testing.T) {
@@ -357,12 +357,12 @@ func TestConflate_addDataError(t *testing.T) {
 	c := New()
 	err := c.AddData([]byte(`{"includes": ["missing"]}`))
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to load url")
+	assert.Contains(t, err.Error(), "failed to load url")
 }
 
 func TestConflate_mergeDataError(t *testing.T) {
 	c := New()
 	err := c.AddData([]byte(`"x": {}`), []byte(`"x": []`))
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Failed to merge")
+	assert.Contains(t, err.Error(), "failed to merge")
 }
