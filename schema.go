@@ -163,14 +163,13 @@ func validate(data, schema interface{}) error {
 
 func processResult(result *gojsonschema.Result) error {
 	if !result.Valid() {
-		var err error
+		err := errInvalidPerSchema
 
 		for _, rerr := range result.Errors() {
 			ctx := convertJSONContext(rerr.Context().String())
 			ctxErr := &errWithContext{msg: rerr.Description(), context: ctx}
 
-			err = fmt.Errorf("%w: %v", errInvalidPerSchema, ctxErr)
-
+			err = fmt.Errorf("%w: %v", err, ctxErr)
 			ferr := formatErrs.get(rerr.Details()["format"], rerr.Value())
 			if ferr != nil {
 				err = fmt.Errorf("%w: %v", err, ferr.Error())
