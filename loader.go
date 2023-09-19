@@ -4,7 +4,7 @@ import (
 	ctx "context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -138,7 +138,7 @@ func (l *loader) wrapFiledatas(bytes ...[]byte) (filedatas, error) {
 func loadURL(url *pkgurl.URL) ([]byte, error) {
 	if url.Scheme == "file" {
 		// attempt to load locally handling case where we are loading from fifo etc
-		b, err := ioutil.ReadFile(getPath(url.Path))
+		b, err := os.ReadFile(getPath(url.Path))
 		if err == nil {
 			return b, nil
 		}
@@ -161,7 +161,7 @@ func loadURL(url *pkgurl.URL) ([]byte, error) {
 		}
 	}()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%w : %v : %v", errFailedToLoad, resp.StatusCode, url.String())
@@ -194,7 +194,7 @@ func loadConfigFromBucket(url *pkgurl.URL) ([]byte, error) {
 		}
 	}()
 
-	slurp, err := ioutil.ReadAll(rc)
+	slurp, err := io.ReadAll(rc)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read data from bucket %q, file %q: %w", bucket, fileName, err)
 	}

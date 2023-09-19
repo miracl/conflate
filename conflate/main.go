@@ -4,7 +4,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 
@@ -56,7 +56,7 @@ func main() {
 
 	for _, d := range data {
 		if d == "stdin" {
-			b, err := ioutil.ReadAll(os.Stdin)
+			b, err := io.ReadAll(os.Stdin)
 			failIfError(err)
 
 			err = c.AddData(b)

@@ -170,6 +170,7 @@ func processResult(result *gojsonschema.Result) error {
 			ctxErr := &errWithContext{msg: rerr.Description(), context: ctx}
 
 			err = fmt.Errorf("%w: %v", err, ctxErr)
+
 			ferr := formatErrs.get(rerr.Details()["format"], rerr.Value())
 			if ferr != nil {
 				err = fmt.Errorf("%w: %v", err, ferr.Error())
