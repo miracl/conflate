@@ -28,7 +28,7 @@ Improvements, ideas and bug fixes are welcomed.
 Run the following command, which will build and install the latest binary in $GOPATH/bin
 
 ```
-go get github.com/miracl/conflate/...
+go install github.com/miracl/conflate/...@latest
 ```
 Alternatively, you can install one of the pre-built release binaries from https://github.com/miracl/conflate/releases
 
