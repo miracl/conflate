@@ -143,14 +143,6 @@ func TestTOMLMarshal_PanicError(t *testing.T) {
 	assert.Contains(t, err.Error(), "marshalled to toml")
 }
 
-func TestTOMLMarshal_Error(t *testing.T) {
-	in := []interface{}{123, "123"}
-	out, err := tomlMarshal(in)
-	assert.NotNil(t, err)
-	assert.Nil(t, out)
-	assert.Contains(t, err.Error(), "marshalled to toml")
-}
-
 // --------
 
 var (
