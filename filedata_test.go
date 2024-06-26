@@ -3,7 +3,6 @@ package conflate
 import (
 	"errors"
 	pkgurl "net/url"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +11,8 @@ import (
 var errTest = errors.New("my error")
 
 func testFiledataNew(t *testing.T, data []byte, path string) (filedata, error) {
+	t.Helper()
+
 	url, err := pkgurl.Parse(path)
 	assert.Nil(t, err)
 
@@ -19,6 +20,8 @@ func testFiledataNew(t *testing.T, data []byte, path string) (filedata, error) {
 }
 
 func testFiledataNewAssert(t *testing.T, data []byte, path string) filedata {
+	t.Helper()
+
 	fd, err := testFiledataNew(t, data, path)
 	assert.Nil(t, err)
 
@@ -188,30 +191,10 @@ func TestFiledata_IncludesError(t *testing.T) {
 }
 
 func TestFiledata_Expand(t *testing.T) {
-	w := os.Getenv("W")
-	x := os.Getenv("X")
-	y := os.Getenv("Y")
-	z := os.Getenv("Z")
-
-	err := os.Setenv("W", "$W")
-	assert.Nil(t, err)
-	err = os.Setenv("X", `"x"`)
-	assert.Nil(t, err)
-	err = os.Setenv("Y", `y`)
-	assert.Nil(t, err)
-	err = os.Setenv("Z", `$Y`)
-	assert.Nil(t, err)
-
-	defer func() {
-		err = os.Setenv("W", w)
-		assert.Nil(t, err)
-		err = os.Setenv("X", x)
-		assert.Nil(t, err)
-		err = os.Setenv("Y", y)
-		assert.Nil(t, err)
-		err = os.Setenv("Z", z)
-		assert.Nil(t, err)
-	}()
+	t.Setenv("W", "$W")
+	t.Setenv("X", `"x"`)
+	t.Setenv("Y", `y`)
+	t.Setenv("Z", `$Y`)
 
 	b := recursiveExpand([]byte(`{"W":"$W","X":$X,"Y":"$Y","Z":"$Z"}`))
 	assert.Equal(t, string(b), string(`{"W":"$W","X":"x","Y":"y","Z":"y"}`))

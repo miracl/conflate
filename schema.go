@@ -167,9 +167,9 @@ func processResult(result *gojsonschema.Result) error {
 
 		for _, rerr := range result.Errors() {
 			ctx := convertJSONContext(rerr.Context().String())
-			ctxErr := &errWithContext{msg: rerr.Description(), context: ctx}
+			ctxErr := &contextError{msg: rerr.Description(), context: ctx}
 
-			err = fmt.Errorf("%w: %v", err, ctxErr)
+			err = fmt.Errorf("%w: %w", err, ctxErr)
 
 			ferr := formatErrs.get(rerr.Details()["format"], rerr.Value())
 			if ferr != nil {
@@ -200,12 +200,12 @@ func applyDefaults(pData, schema interface{}) error {
 
 func applyDefaultsRecursive(ctx context, rootSchema, pData, schema interface{}) error {
 	if pData == nil {
-		return &errWithContext{context: ctx, msg: "destination value must not be nil"}
+		return &contextError{context: ctx, msg: "destination value must not be nil"}
 	}
 
 	pDataVal := reflect.ValueOf(pData)
 	if pDataVal.Kind() != reflect.Ptr {
-		return &errWithContext{context: ctx, msg: "destination value must be a pointer"}
+		return &contextError{context: ctx, msg: "destination value must be a pointer"}
 	}
 
 	dataVal := pDataVal.Elem()
@@ -213,24 +213,24 @@ func applyDefaultsRecursive(ctx context, rootSchema, pData, schema interface{}) 
 
 	schemaNode, ok := schema.(map[string]interface{})
 	if !ok {
-		return &errWithContext{context: ctx, msg: "schema section is not a map"}
+		return &contextError{context: ctx, msg: "schema section is not a map"}
 	}
 
 	val, ok := schemaNode["$ref"]
 	if ok {
 		ref, ok := val.(string)
 		if !ok {
-			return &errWithContext{context: ctx, msg: fmt.Sprintf("reference is not a string '%v'", ref)}
+			return &contextError{context: ctx, msg: fmt.Sprintf("reference is not a string '%v'", ref)}
 		}
 
 		jref, err := gojsonreference.NewJsonReference(ref)
 		if err != nil {
-			return &errWithContext{context: ctx, msg: fmt.Sprintf("invalid reference '%v': %v", ref, err.Error())}
+			return &contextError{context: ctx, msg: fmt.Sprintf("invalid reference '%v': %v", ref, err.Error())}
 		}
 
 		subSchema, _, err := jref.GetPointer().Get(rootSchema)
 		if subSchema == nil || err != nil {
-			return &errWithContext{context: ctx, msg: fmt.Sprintf("cannot find reference '%v': %v", ref, err.Error())}
+			return &contextError{context: ctx, msg: fmt.Sprintf("cannot find reference '%v': %v", ref, err.Error())}
 		}
 
 		return applyDefaultsRecursive(ctx.add(ref), rootSchema, pData, subSchema)
@@ -243,7 +243,7 @@ func applyDefaultsRecursive(ctx context, rootSchema, pData, schema interface{}) 
 			return nil
 		}
 
-		return &errWithContext{context: ctx, msg: "Schema section does not have a valid 'type' attribute"}
+		return &contextError{context: ctx, msg: "Schema section does not have a valid 'type' attribute"}
 	}
 
 	if value, ok := schemaNode["default"]; ok && data == nil {
@@ -274,6 +274,9 @@ func hasKey(m map[string]interface{}, keys ...string) bool {
 	return false
 }
 
+var errNoMapString = errors.New("expected map of strings")
+
+//nolint:gocyclo // acceptable
 func applyObjectDefaults(ctx context, rootSchema, data interface{}, schemaNode map[string]interface{}) error {
 	if data == nil {
 		return nil
@@ -281,7 +284,7 @@ func applyObjectDefaults(ctx context, rootSchema, data interface{}, schemaNode m
 
 	dataProps, ok := data.(map[string]interface{})
 	if !ok {
-		return &errWithContext{context: ctx, msg: "node should be an 'object'"}
+		return &contextError{context: ctx, msg: "node should be an 'object'"}
 	}
 
 	if dataProps == nil {
@@ -289,8 +292,15 @@ func applyObjectDefaults(ctx context, rootSchema, data interface{}, schemaNode m
 	}
 
 	var schemaProps map[string]interface{}
+
 	if props, ok := schemaNode["properties"]; ok {
-		schemaProps = props.(map[string]interface{})
+		var ok bool
+
+		schemaProps, ok = props.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("%w: %v", errNoMapString, props)
+		}
+
 		for name, schemaProp := range schemaProps {
 			dataProp := dataProps[name]
 
@@ -310,7 +320,7 @@ func applyObjectDefaults(ctx context, rootSchema, data interface{}, schemaNode m
 		if addProps, ok = addProps.(map[string]interface{}); ok {
 			for name, dataProp := range dataProps {
 				if schemaProps == nil || schemaProps[name] == nil {
-					err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, addProps) //nolint:gosec,scopelint // to be refactored carefully
+					err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, addProps) //nolint:scopelint // to be refactored carefully
 					if err != nil {
 						return fmt.Errorf("failed to apply defaults to additional object property: %w", err)
 					}
@@ -333,14 +343,17 @@ func applyArrayDefaults(ctx context, rootSchema, data interface{}, schemaNode ma
 
 	dataItems, ok := data.([]interface{})
 	if !ok {
-		return &errWithContext{context: ctx, msg: "node should be an 'array'"}
+		return &contextError{context: ctx, msg: "node should be an 'array'"}
 	}
 
 	if items, ok := schemaNode["items"]; ok {
-		schemaItem := items.(map[string]interface{})
+		schemaItem, ok := items.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("%w: %v", errNoMapString, items)
+		}
 
 		for i, dataItem := range dataItems {
-			err := applyDefaultsRecursive(ctx.addInt(i), rootSchema, &dataItem, schemaItem) //nolint:gosec,scopelint // to be refactored carefully
+			err := applyDefaultsRecursive(ctx.addInt(i), rootSchema, &dataItem, schemaItem) //nolint:scopelint // to be refactored carefully
 			if err != nil {
 				return fmt.Errorf("failed to apply defaults to array item: %w", err)
 			}

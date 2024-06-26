@@ -100,7 +100,7 @@ func (f xmlTemplateFormatChecker) IsFormat(input interface{}) bool {
 
 	if s, ok := input.(string); ok {
 		s = f.tags.ReplaceAllString(s, "")
-		if len(s) > 0 {
+		if s != "" {
 			var v interface{}
 			if err := xml.Unmarshal([]byte(s), &v); err != nil {
 				ferr = fmt.Errorf("failed to parse xml: %w", err)

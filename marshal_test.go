@@ -18,7 +18,7 @@ func TestJSONMarshalAll(t *testing.T) {
 }
 
 func TestJSONMarshalAll_Error(t *testing.T) {
-	mockMarshal := func(obj interface{}) ([]byte, error) {
+	mockMarshal := func(_ interface{}) ([]byte, error) {
 		return nil, errTest
 	}
 	data, err := jsonMarshalAll(mockMarshal, "a")

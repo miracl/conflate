@@ -133,7 +133,7 @@ func recursiveExpand(b []byte) []byte {
 
 	var c int
 
-	for i := 0; i < maxExpansions; i++ {
+	for range maxExpansions {
 		b, c = expand(b)
 		if c == 0 {
 			return b
