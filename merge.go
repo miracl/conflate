@@ -22,7 +22,7 @@ func merge(pToData, fromData interface{}) error {
 
 func mergeRecursive(ctx context, pToData, fromData interface{}) error {
 	if pToData == nil {
-		return &errWithContext{
+		return &contextError{
 			context: ctx,
 			msg:     "the destination variable must not be nil",
 		}
@@ -30,7 +30,7 @@ func mergeRecursive(ctx context, pToData, fromData interface{}) error {
 
 	pToVal := reflect.ValueOf(pToData)
 	if pToVal.Kind() != reflect.Ptr {
-		return &errWithContext{
+		return &contextError{
 			context: ctx,
 			msg:     "the destination variable must be a pointer",
 		}
@@ -69,15 +69,15 @@ func mergeRecursive(ctx context, pToData, fromData interface{}) error {
 func mergeMapRecursive(ctx context, toData, fromData interface{}) error {
 	fromProps, ok := fromData.(map[string]interface{})
 	if !ok {
-		return &errWithContext{
+		return &contextError{
 			context: ctx,
 			msg:     "the source value must be a map[string]interface{}",
 		}
 	}
 
-	toProps, _ := toData.(map[string]interface{})
-	if toProps == nil {
-		return &errWithContext{
+	toProps, ok := toData.(map[string]interface{})
+	if toProps == nil || !ok {
+		return &contextError{
 			context: ctx,
 			msg:     "the destination value must be a map[string]interface{}",
 		}
@@ -89,7 +89,7 @@ func mergeMapRecursive(ctx context, toData, fromData interface{}) error {
 		} else {
 			err := merge(&val, fromProp)
 			if err != nil {
-				return &errWithContext{
+				return &contextError{
 					context: ctx.add(name),
 					msg:     fmt.Sprintf("failed to merge object property : %v : %v", name, err.Error()),
 				}
@@ -105,15 +105,15 @@ func mergeMapRecursive(ctx context, toData, fromData interface{}) error {
 func mergeSliceRecursive(ctx context, toVal reflect.Value, toData, fromData interface{}) error {
 	fromItems, ok := fromData.([]interface{})
 	if !ok {
-		return &errWithContext{
+		return &contextError{
 			context: ctx,
 			msg:     "the source value must be a []interface{}",
 		}
 	}
 
-	toItems, _ := toData.([]interface{})
-	if toItems == nil {
-		return &errWithContext{
+	toItems, ok := toData.([]interface{})
+	if toItems == nil || !ok {
+		return &contextError{
 			context: ctx,
 			msg:     "the destination value must be a []interface{}",
 		}
@@ -138,7 +138,7 @@ func mergeDefaultRecursive(ctx context, toVal, fromVal reflect.Value, toData, fr
 	}
 
 	if !fromType.AssignableTo(toType) {
-		return &errWithContext{
+		return &contextError{
 			context: ctx,
 			msg:     fmt.Sprintf("the destination type (%v) must be the same as the source type (%v)", toType, fromType),
 		}

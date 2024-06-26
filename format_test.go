@@ -216,6 +216,8 @@ func TestHtmlFormatCheckerIsFormat_NotValid(t *testing.T) {
 // --------
 
 func testCryptoFormatCheckerIsFormatNotString(t *testing.T, cryptoType cryptoType) {
+	t.Helper()
+
 	givenName := cryptoName
 	givenValue := 1
 
@@ -243,6 +245,8 @@ func TestCryptoFormatCheckerIsFormat_NotString(t *testing.T) {
 }
 
 func testCryptoFormatCheckerIsFormatNotValid(t *testing.T, cryptoType cryptoType) {
+	t.Helper()
+
 	givenName := cryptoName
 	givenValue := "dGhpcyBpcyBub3QgYSB2YWxpZCBjZXJ0aWZpY2F0ZQo="
 
@@ -270,6 +274,8 @@ func TestCryptoFormatCheckerIsFormat_NotValid(t *testing.T) {
 }
 
 func testCryptoFormatCheckerIsFormatValid(t *testing.T, cryptoType cryptoType, givenValue string) {
+	t.Helper()
+
 	givenName := cryptoName
 
 	formatErrs.clear()

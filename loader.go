@@ -68,8 +68,6 @@ func (l *loader) loadDataRecursive(parentUrls []*pkgurl.URL, data ...filedata) (
 	var allData filedatas
 
 	for _, datum := range data {
-		datum := datum
-
 		childData, err := l.loadDatumRecursive(parentUrls, nil, &datum)
 		if err != nil {
 			return nil, err
@@ -150,7 +148,7 @@ func loadURL(url *pkgurl.URL) ([]byte, error) {
 
 	client := http.Client{Transport: newTransport()}
 
-	resp, err := client.Get(url.String())
+	resp, err := client.Get(url.String()) //nolint:noctx // we don't have ctx anywhere
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +299,7 @@ func workingDir() (*pkgurl.URL, error) {
 func setPath(path string) string {
 	if goos == windowsOS {
 		// https://blogs.msdn.microsoft.com/ie/2006/12/06/file-uris-in-windows/
-		path = strings.Replace(path, `\`, `/`, -1)
+		path = strings.ReplaceAll(path, `\`, `/`)
 		path = strings.TrimLeft(path, `/`)
 
 		if driveLetter.MatchString(path) {
@@ -321,7 +319,7 @@ func getPath(path string) string {
 			path = `//` + path
 		}
 
-		path = strings.Replace(path, `/`, `\`, -1)
+		path = strings.ReplaceAll(path, `/`, `\`)
 	}
 
 	return path

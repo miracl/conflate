@@ -178,7 +178,9 @@ func TestValidate_NotValid(t *testing.T) {
 	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 
-	obj := data["obj"].(map[string]interface{})
+	obj, ok := data["obj"].(map[string]interface{})
+	assert.True(t, ok)
+
 	obj["str"] = 123
 
 	err = validate(data, schema)
@@ -200,8 +202,11 @@ func TestValidate_CustomFormatError(t *testing.T) {
 	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 
-	props := schema["properties"].(map[string]interface{})
-	str := props["str"].(map[string]interface{})
+	props, ok := schema["properties"].(map[string]interface{})
+	assert.True(t, ok)
+	str, ok := props["str"].(map[string]interface{})
+	assert.True(t, ok)
+
 	str["format"] = "xml-template"
 
 	err = validate(data, schema)
@@ -591,11 +596,14 @@ func TestApplyDefaults_MissingIntFields(t *testing.T) {
 
 	delete(data, "int")
 	delete(data, "array_of_int")
-	obj := data["obj"].(map[string]interface{})
+	obj, ok := data["obj"].(map[string]interface{})
+	assert.True(t, ok)
 	delete(obj, "int")
 
-	arr := data["array_of_obj"].([]interface{})
-	arrObj := arr[0].(map[string]interface{})
+	arr, ok := data["array_of_obj"].([]interface{})
+	assert.True(t, ok)
+	arrObj, ok := arr[0].(map[string]interface{})
+	assert.True(t, ok)
 	delete(arrObj, "int")
 
 	err = applyDefaults(&data, schema)

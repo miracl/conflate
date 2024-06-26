@@ -6,11 +6,11 @@ import (
 
 type context string
 
-type errWithContext struct {
+type contextError struct {
 	msg     string
 	context context
 }
 
-func (e errWithContext) Error() string {
+func (e contextError) Error() string {
 	return fmt.Sprintf("%v (%v)", e.msg, e.context)
 }

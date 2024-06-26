@@ -184,6 +184,8 @@ func TestMerge_Equal(t *testing.T) {
 }
 
 func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
+	t.Helper()
+
 	mergedVal := reflect.ValueOf(merged)
 
 	//nolint:exhaustive // test caseload
@@ -193,31 +195,40 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 	case reflect.Slice:
 		testMergeCheckSlice(t, merged, data1, data2)
 	default:
-		if data1 == nil && data2 != nil {
+		switch {
+		case data1 == nil && data2 != nil:
 			assert.Equal(t, data2, merged)
-		} else if data1 != nil && data2 == nil {
+		case data1 != nil && data2 == nil:
 			assert.Equal(t, data1, merged)
-		} else if data1 != nil && data2 != nil {
+		case data1 != nil && data2 != nil:
 			assert.Equal(t, data2, merged)
-		} else {
+		default:
 			assert.Nil(t, merged)
 		}
 	}
 }
 
 func testMergeCheckMap(t *testing.T, merged, data1, data2 interface{}) {
-	var mergedMap, data1Map, data2Map map[string]interface{}
+	t.Helper()
+
+	var (
+		mergedMap, data1Map, data2Map map[string]interface{}
+		ok                            bool
+	)
 
 	if merged != nil {
-		mergedMap = merged.(map[string]interface{})
+		mergedMap, ok = merged.(map[string]interface{})
+		assert.True(t, ok)
 	}
 
 	if data1 != nil {
-		data1Map = data1.(map[string]interface{})
+		data1Map, ok = data1.(map[string]interface{})
+		assert.True(t, ok)
 	}
 
 	if data2 != nil {
-		data2Map = data2.(map[string]interface{})
+		data2Map, ok = data2.(map[string]interface{})
+		assert.True(t, ok)
 	}
 
 	for name, mergedItem := range mergedMap {
@@ -236,18 +247,26 @@ func testMergeCheckMap(t *testing.T, merged, data1, data2 interface{}) {
 }
 
 func testMergeCheckSlice(t *testing.T, merged, data1, data2 interface{}) {
-	var mergedArr, data1Arr, data2Arr []interface{}
+	t.Helper()
+
+	var (
+		mergedArr, data1Arr, data2Arr []interface{}
+		ok                            bool
+	)
 
 	if merged != nil {
-		mergedArr = merged.([]interface{})
+		mergedArr, ok = merged.([]interface{})
+		assert.True(t, ok)
 	}
 
 	if data1 != nil {
-		data1Arr = data1.([]interface{})
+		data1Arr, ok = data1.([]interface{})
+		assert.True(t, ok)
 	}
 
 	if data2 != nil {
-		data2Arr = data2.([]interface{})
+		data2Arr, ok = data2.([]interface{})
+		assert.True(t, ok)
 	}
 
 	assert.Equal(t, len(data1Arr)+len(data2Arr), len(mergedArr))
@@ -270,6 +289,8 @@ func testMergeCheckSlice(t *testing.T, merged, data1, data2 interface{}) {
 // ----------
 
 func testMergeGetData(t *testing.T, data []byte) interface{} {
+	t.Helper()
+
 	var out interface{}
 
 	err := json.Unmarshal(data, &out)

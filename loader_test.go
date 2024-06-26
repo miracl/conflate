@@ -201,9 +201,11 @@ func testServer() func() {
 }
 
 func testWaitForURL(t *testing.T, urlPath string) {
+	t.Helper()
+
 	// wait for a couple of seconds for server to come up
-	for i := 0; i < 4; i++ {
-		resp, err := http.Get(urlPath) //nolint:gosec // ok for a test
+	for range 4 {
+		resp, err := http.Get(urlPath) //nolint:gosec,noctx // ok for a test
 		if err == nil {
 			//nolint:gocritic // ok for a test with small loop
 			defer func() {
@@ -382,6 +384,8 @@ func TestLoadURLsRecursive_BlankChildToml(t *testing.T) {
 }
 
 func testPath(t *testing.T, urlPath, filePath string) {
+	t.Helper()
+
 	assert.Equal(t, urlPath, setPath(filePath))
 	assert.Equal(t, filePath, getPath(urlPath))
 }

@@ -3,7 +3,6 @@ package conflate
 import (
 	gocontext "context"
 	"net/http"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -56,14 +55,12 @@ func TestAddData_Expand(t *testing.T) {
 	c := New()
 	c.Expand(true)
 
-	err := os.Setenv("X", "123")
-	assert.Nil(t, err)
-	err = os.Setenv("Y", "str")
-	assert.Nil(t, err)
+	t.Setenv("X", "123")
+	t.Setenv("Y", "str")
 
 	inJSON := []byte(`{ "x": $X, "y": "$Y", "z": "$Z"}`)
 
-	err = c.AddData(inJSON)
+	err := c.AddData(inJSON)
 	assert.Nil(t, err)
 	outJSON, err := c.MarshalJSON()
 	assert.Nil(t, err)
@@ -79,14 +76,12 @@ func TestAddData_NoExpand(t *testing.T) {
 	c := New()
 	c.Expand(false)
 
-	err := os.Setenv("X", "123")
-	assert.Nil(t, err)
-	err = os.Setenv("Y", "str")
-	assert.Nil(t, err)
+	t.Setenv("X", "123")
+	t.Setenv("Y", "str")
 
 	inJSON := []byte(`{ "x": "$X" }`)
 
-	err = c.AddData(inJSON)
+	err := c.AddData(inJSON)
 	assert.Nil(t, err)
 
 	outJSON, err := c.MarshalJSON()
