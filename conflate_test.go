@@ -21,6 +21,11 @@ type TestData struct {
 	All           string `json:"all"`
 }
 
+type TestNulledData struct {
+	Foo string `yaml:"foo"`
+	Bar string `yaml:"bar"`
+}
+
 func TestFromFiles(t *testing.T) {
 	c, err := FromFiles("testdata/valid_parent.json")
 	assert.Nil(t, err)
@@ -360,4 +365,15 @@ func TestConflate_mergeDataError(t *testing.T) {
 	err := c.AddData([]byte(`"x": {}`), []byte(`"x": []`))
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "failed to merge")
+}
+
+func TestFromFilesNulled(t *testing.T) {
+	c, err := FromFiles("testdata/test_not_nulled.yaml", "testdata/test_nulled.yaml")
+	assert.Nil(t, err)
+	assert.NotNil(t, c)
+	var testData TestNulledData
+	err = c.Unmarshal(&testData)
+	assert.Nil(t, err)
+	assert.Equal(t, "foo", testData.Foo)
+	assert.Equal(t, "", testData.Bar)
 }

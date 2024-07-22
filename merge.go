@@ -84,6 +84,11 @@ func mergeMapRecursive(ctx context, toData, fromData interface{}) error {
 	}
 
 	for name, fromProp := range fromProps {
+		// merge in explicit nil values
+		if fromProp == nil {
+			toProps[name] = nil
+			continue
+		}
 		if val := toProps[name]; val == nil {
 			toProps[name] = fromProp
 		} else {
