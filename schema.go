@@ -1,6 +1,7 @@
 package conflate
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net/url"
@@ -18,62 +19,75 @@ const (
 	draft07   = "http://json-schema.org/draft-07/schema#"
 )
 
-// Schema contains a JSON v4 schema
+var (
+	errInvalidPerSchema       = errors.New("the document is not valid against the schema")
+	errNotSetSchema           = errors.New("schema is not set")
+	errInvalidSchemaStructure = errors.New("invalid schema structure")
+)
+
+// Schema contains a JSON v4 schema.
 type Schema struct {
 	s interface{}
 }
 
-// NewSchemaFile loads a JSON v4 schema from the given path
+// NewSchemaFile loads a JSON v4 schema from the given path.
 func NewSchemaFile(path string) (*Schema, error) {
-	url, err := toURL(nil, path)
+	u, err := toURL(nil, path)
 	if err != nil {
-		return nil, wrapError(err, "Failed to obtain url to schema file")
+		return nil, fmt.Errorf("failed to obtain url to schema file: %w", err)
 	}
-	return NewSchemaURL(url)
+
+	return NewSchemaURL(u)
 }
 
-// NewSchemaURL loads a JSON v4 schema from the given URL
-func NewSchemaURL(url url.URL) (*Schema, error) {
-	data, err := loadURL(url)
+// NewSchemaURL loads a JSON v4 schema from the given URL.
+func NewSchemaURL(u *url.URL) (*Schema, error) {
+	data, err := loadURL(u)
 	if err != nil {
-		return nil, wrapError(err, "Failed to load schema url %v", url)
+		return nil, fmt.Errorf("failed to load schema url %v: %w", u, err)
 	}
+
 	return NewSchemaData(data)
 }
 
-// NewSchemaData loads a JSON v4 schema from the given data
+// NewSchemaData loads a JSON v4 schema from the given data.
 func NewSchemaData(data []byte) (*Schema, error) {
 	var s interface{}
+
 	err := JSONUnmarshal(data, &s)
 	if err != nil {
-		return nil, wrapError(err, "Schema is not valid json")
+		return nil, fmt.Errorf("schema is not valid json: %w", err)
 	}
+
 	return NewSchemaGo(s)
 }
 
-// NewSchemaGo creates a Schema instance from a schema represented as a golang object
+// NewSchemaGo creates a Schema instance from a schema represented as a golang object.
 func NewSchemaGo(s interface{}) (*Schema, error) {
 	// validate if the schema is properly constructed by its specified draft
 	draft, err := validateSchema(s)
 	if err != nil {
-		return nil, wrapError(err, "The schema is not valid against the meta-schema "+draft)
+		return nil, fmt.Errorf("the schema is not valid against the meta-schema %v: %w", draft, err)
 	}
+
 	return &Schema{s: s}, nil
 }
 
-// Validate checks the given golang data against the schema
+// Validate checks the given golang data against the schema.
 func (s *Schema) Validate(data interface{}) error {
 	if s == nil {
-		return makeError("Schema is not set")
+		return errNotSetSchema
 	}
+
 	return validate(data, s.s)
 }
 
-// ApplyDefaults adds default values defined in the schema to the data pointed to by pData
+// ApplyDefaults adds default values defined in the schema to the data pointed to by pData.
 func (s *Schema) ApplyDefaults(pData interface{}) error {
 	if s == nil {
-		return makeError("Schema is not set")
+		return errNotSetSchema
 	}
+
 	return applyDefaults(pData, s.s)
 }
 
@@ -82,21 +96,25 @@ var metaSchema interface{}
 func updateMetaSchema(s interface{}) (draft string, err error) {
 	m, ok := s.(map[string]interface{})
 	if !ok {
-		return "Unknown", makeError("Invalid schema structure")
+		return "Unknown", errInvalidSchemaStructure
 	}
+
 	// use schema draft 04 if we don't have a key to specify it
 	draft = draft04
 	data := metaSchemaData[draft]
+
 	if v, ok := m[keySchema]; ok {
 		draft = fmt.Sprintf("%v", v)
 		if d, ok := metaSchemaData[draft]; ok {
 			data = d
 		}
 	}
+
 	err = JSONUnmarshal(data, &metaSchema)
 	if err != nil {
-		return draft, wrapError(err, "Could not load json meta-schema")
+		return draft, fmt.Errorf("could not load json meta-schema: %w", err)
 	}
+
 	return draft, nil
 }
 
@@ -105,92 +123,116 @@ func validateSchema(schema interface{}) (string, error) {
 	sl := gojsonschema.NewSchemaLoader()
 	sl.AutoDetect = true
 	sl.Validate = true
+
 	err := sl.AddSchemas(schemaLoader)
 	if err != nil {
 		draft := fmt.Sprintf("Draft0%v", sl.Draft)
 		if sl.Draft == math.MaxInt32 {
 			draft = "hybrid"
 		}
-		return draft, wrapError(err, "Schema validation failed")
+
+		return draft, fmt.Errorf("schema validation failed: %w", err)
 	}
 
 	draft, err := updateMetaSchema(schema)
 	if err != nil {
-		return draft, wrapError(err, "Cannot access the schema draft")
+		return draft, fmt.Errorf("cannot access the schema draft: %w", err)
 	}
+
 	return draft, validate(schema, metaSchema)
 }
 
-func validate(data interface{}, schema interface{}) error {
+func validate(data, schema interface{}) error {
 	dataLoader := gojsonschema.NewGoLoader(data)
 	schemaLoader := gojsonschema.NewGoLoader(schema)
+
 	formatErrs.clear()
+
 	result, err := gojsonschema.Validate(schemaLoader, dataLoader)
 	if err != nil {
-		return wrapError(err, "An error occurred during validation")
+		return fmt.Errorf("an error occurred during validation: %w", err)
 	}
+
 	err = processResult(result)
-	return wrapError(err, "Schema validation failed")
+	if err != nil {
+		return fmt.Errorf("schema validation failed: %w", err)
+	}
+
+	return nil
 }
 
 func processResult(result *gojsonschema.Result) error {
 	if !result.Valid() {
-		err := makeError("The document is not valid against the schema")
+		err := errInvalidPerSchema
+
 		for _, rerr := range result.Errors() {
 			ctx := convertJSONContext(rerr.Context().String())
-			ctxErr := makeContextError(ctx, rerr.Description())
+			ctxErr := &contextError{msg: rerr.Description(), context: ctx}
+
+			err = fmt.Errorf("%w: %w", err, ctxErr)
 
 			ferr := formatErrs.get(rerr.Details()["format"], rerr.Value())
 			if ferr != nil {
-				ctxErr = detailError(ctxErr, ferr.Error())
+				err = fmt.Errorf("%w: %v", err, ferr.Error())
 			}
-			err = wrapError(ctxErr, err.Error())
 		}
+
 		return err
 	}
+
 	return nil
 }
 
 func convertJSONContext(jsonCtx string) context {
 	parts := strings.Split(jsonCtx, ".")
+
 	return rootContext().add(parts[1:]...)
 }
 
-func applyDefaults(pData interface{}, schema interface{}) error {
+func applyDefaults(pData, schema interface{}) error {
 	err := applyDefaultsRecursive(rootContext(), schema, pData, schema)
-	return wrapError(err, "The defaults could not be applied")
+	if err != nil {
+		return fmt.Errorf("the defaults could not be applied: %w", err)
+	}
+
+	return nil
 }
 
-func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface{}, schema interface{}) error {
+func applyDefaultsRecursive(ctx context, rootSchema, pData, schema interface{}) error {
 	if pData == nil {
-		return makeContextError(ctx, "Destination value must not be nil")
+		return &contextError{context: ctx, msg: "destination value must not be nil"}
 	}
+
 	pDataVal := reflect.ValueOf(pData)
 	if pDataVal.Kind() != reflect.Ptr {
-		return makeContextError(ctx, "Destination value must be a pointer")
+		return &contextError{context: ctx, msg: "destination value must be a pointer"}
 	}
+
 	dataVal := pDataVal.Elem()
 	data := dataVal.Interface()
 
 	schemaNode, ok := schema.(map[string]interface{})
 	if !ok {
-		return makeContextError(ctx, "Schema section is not a map")
+		return &contextError{context: ctx, msg: "schema section is not a map"}
 	}
 
 	val, ok := schemaNode["$ref"]
 	if ok {
 		ref, ok := val.(string)
 		if !ok {
-			return makeContextError(ctx, makeError("Reference is not a string '%v'", ref).Error())
+			return &contextError{context: ctx, msg: fmt.Sprintf("reference is not a string '%v'", ref)}
 		}
+
 		jref, err := gojsonreference.NewJsonReference(ref)
 		if err != nil {
-			return makeContextError(ctx, wrapError(err, "Invalid reference '%v'", ref).Error())
+			return &contextError{context: ctx, msg: fmt.Sprintf("invalid reference '%v': %v", ref, err.Error())}
 		}
+
 		subSchema, _, err := jref.GetPointer().Get(rootSchema)
 		if subSchema == nil || err != nil {
-			return makeContextError(ctx, wrapError(err, "Cannot find reference '%v'", ref).Error())
+			return &contextError{context: ctx, msg: fmt.Sprintf("cannot find reference '%v': %v", ref, err.Error())}
 		}
+
 		return applyDefaultsRecursive(ctx.add(ref), rootSchema, pData, subSchema)
 	}
 
@@ -200,7 +242,8 @@ func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface
 			// the schema is valid, so it is not an error, but we do not support these types of schema yet
 			return nil
 		}
-		return makeContextError(ctx, "Schema section does not have a valid 'type' attribute")
+
+		return &contextError{context: ctx, msg: "Schema section does not have a valid 'type' attribute"}
 	}
 
 	if value, ok := schemaNode["default"]; ok && data == nil {
@@ -210,12 +253,14 @@ func applyDefaultsRecursive(ctx context, rootSchema interface{}, pData interface
 	}
 
 	var err error
+
 	switch schemaType {
 	case "object":
 		err = applyObjectDefaults(ctx, rootSchema, data, schemaNode)
 	case "array":
 		err = applyArrayDefaults(ctx, rootSchema, data, schemaNode)
 	}
+
 	return err
 }
 
@@ -225,42 +270,61 @@ func hasKey(m map[string]interface{}, keys ...string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
-func applyObjectDefaults(ctx context, rootSchema interface{}, data interface{}, schemaNode map[string]interface{}) error {
+var errNoMapString = errors.New("expected map of strings")
+
+//nolint:gocyclo // acceptable
+func applyObjectDefaults(ctx context, rootSchema, data interface{}, schemaNode map[string]interface{}) error {
 	if data == nil {
 		return nil
 	}
+
 	dataProps, ok := data.(map[string]interface{})
 	if !ok {
-		return makeContextError(ctx, "Node should be an 'object'")
+		return &contextError{context: ctx, msg: "node should be an 'object'"}
 	}
+
 	if dataProps == nil {
 		return nil
 	}
+
 	var schemaProps map[string]interface{}
+
 	if props, ok := schemaNode["properties"]; ok {
-		schemaProps = props.(map[string]interface{})
+		var ok bool
+
+		schemaProps, ok = props.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("%w: %v", errNoMapString, props)
+		}
+
 		for name, schemaProp := range schemaProps {
 			dataProp := dataProps[name]
+
 			err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, schemaProp)
 			if err != nil {
-				return wrapError(err, "Failed to apply defaults to object property")
+				return fmt.Errorf("failed to apply defaults to object property: %w", err)
 			}
+
 			if dataProp != nil {
 				dataProps[name] = dataProp
 			}
 		}
 	}
+
+	//nolint:nestif // to be refactored
 	if addProps, ok := schemaNode["additionalProperties"]; ok {
 		if addProps, ok = addProps.(map[string]interface{}); ok {
 			for name, dataProp := range dataProps {
 				if schemaProps == nil || schemaProps[name] == nil {
-					err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, addProps)
+					err := applyDefaultsRecursive(ctx.add(name), rootSchema, &dataProp, addProps) //nolint:scopelint // to be refactored carefully
 					if err != nil {
-						return wrapError(err, "Failed to apply defaults to additional object property")
+						return fmt.Errorf("failed to apply defaults to additional object property: %w", err)
 					}
+
 					if dataProp != nil {
 						dataProps[name] = dataProp
 					}
@@ -268,29 +332,38 @@ func applyObjectDefaults(ctx context, rootSchema interface{}, data interface{}, 
 			}
 		}
 	}
+
 	return nil
 }
 
-func applyArrayDefaults(ctx context, rootSchema interface{}, data interface{}, schemaNode map[string]interface{}) error {
+func applyArrayDefaults(ctx context, rootSchema, data interface{}, schemaNode map[string]interface{}) error {
 	if data == nil {
 		return nil
 	}
+
 	dataItems, ok := data.([]interface{})
 	if !ok {
-		return makeContextError(ctx, "Node should be an 'array'")
+		return &contextError{context: ctx, msg: "node should be an 'array'"}
 	}
+
 	if items, ok := schemaNode["items"]; ok {
-		schemaItem := items.(map[string]interface{})
+		schemaItem, ok := items.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("%w: %v", errNoMapString, items)
+		}
+
 		for i, dataItem := range dataItems {
-			err := applyDefaultsRecursive(ctx.addInt(i), rootSchema, &dataItem, schemaItem)
+			err := applyDefaultsRecursive(ctx.addInt(i), rootSchema, &dataItem, schemaItem) //nolint:scopelint // to be refactored carefully
 			if err != nil {
-				return wrapError(err, "Failed to apply defaults to array item")
+				return fmt.Errorf("failed to apply defaults to array item: %w", err)
 			}
+
 			if dataItem != nil {
 				dataItems[i] = dataItem
 			}
 		}
 	}
+
 	return nil
 }
 

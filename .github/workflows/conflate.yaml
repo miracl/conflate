@@ -1,0 +1,28 @@
+name: conflate
+
+on: [push]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: miracl/oidc-samples/samples/go
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
+  run-tests:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.*
+      - name: Go test
+        run: go test -v ./...

@@ -1,6 +1,7 @@
 package conflate
 
 import (
+	"fmt"
 	pkgurl "net/url"
 	"os"
 	"path/filepath"
@@ -8,7 +9,7 @@ import (
 )
 
 type filedata struct {
-	url      pkgurl.URL
+	url      *pkgurl.URL
 	data     []byte
 	obj      map[string]interface{}
 	includes []string
@@ -18,16 +19,17 @@ var emptyFiledata = filedata{}
 
 type filedatas []filedata
 
-// UnmarshallerFunc defines the type of function used for unmarshalling data
+// UnmarshallerFunc defines the type of function used for unmarshalling data.
 type UnmarshallerFunc func([]byte, interface{}) error
 
-// UnmarshallerFuncs defines the type for a slice of UnmarshallerFunc
+// UnmarshallerFuncs defines the type for a slice of UnmarshallerFunc.
 type UnmarshallerFuncs []UnmarshallerFunc
 
-// UnmarshallerMap defines the type of a map of string to UnmarshallerFuncs
+// UnmarshallerMap defines the type of a map of string to UnmarshallerFuncs.
 type UnmarshallerMap map[string]UnmarshallerFuncs
 
-// Unmarshallers is a list of unmarshalling functions to be used for given file extensions. The unmarshaller slice for the blank file extension is used when no match is found.
+// Unmarshallers is a list of unmarshalling functions to be used for given file extensions.
+// The unmarshaller slice for the blank file extension is used when no match is found.
 var Unmarshallers = UnmarshallerMap{
 	".json": {JSONUnmarshal},
 	".jsn":  {JSONUnmarshal},
@@ -38,32 +40,37 @@ var Unmarshallers = UnmarshallerMap{
 	"":      {JSONUnmarshal, YAMLUnmarshal, TOMLUnmarshal},
 }
 
-func newFiledata(data []byte, url pkgurl.URL) (filedata, error) {
+func newFiledata(data []byte, url *pkgurl.URL) (filedata, error) {
 	fd := filedata{data: data, url: url}
+
 	err := fd.unmarshal()
 	if err != nil {
 		return emptyFiledata, err
 	}
+
 	err = fd.validate()
 	if err != nil {
 		return emptyFiledata, err
 	}
+
 	err = fd.extractIncludes()
 	if err != nil {
 		return emptyFiledata, err
 	}
+
 	return fd, nil
 }
 
-func newExpandedFiledata(data []byte, url pkgurl.URL) (filedata, error) {
+func newExpandedFiledata(data []byte, url *pkgurl.URL) (filedata, error) {
 	return newFiledata(recursiveExpand(data), url)
 }
 
 func (fd *filedata) wrapError(err error) error {
-	if fd.url == emptyURL {
+	if fd == nil || fd.url == nil || *fd.url == emptyURL || err == nil {
 		return err
 	}
-	return wrapError(err, "Error processing %v", fd.url.String())
+
+	return fmt.Errorf("error processing %v: %w", fd.url.String(), err)
 }
 
 func (fd *filedata) validate() error {
@@ -72,18 +79,23 @@ func (fd *filedata) validate() error {
 
 func (fd *filedata) unmarshal() error {
 	ext := strings.ToLower(filepath.Ext(fd.url.Path))
+
 	unmarshallers, ok := Unmarshallers[ext]
 	if !ok {
 		unmarshallers = Unmarshallers[""]
 	}
-	err := makeError("Could not unmarshal data")
+
+	var err error
+
 	for _, unmarshal := range unmarshallers {
 		uerr := unmarshal(fd.data, &fd.obj)
 		if uerr == nil {
 			return nil
 		}
-		err = wrapError(uerr, err.Error())
+
+		err = fmt.Errorf("could not unmarshal data: %w", uerr)
 	}
+
 	return err
 }
 
@@ -91,19 +103,24 @@ func (fd *filedata) extractIncludes() error {
 	if Includes == "" {
 		return nil
 	}
+
 	err := jsonMarshalUnmarshal(fd.obj[Includes], &fd.includes)
 	if err != nil {
-		return wrapError(err, "Could not extract includes")
+		return fmt.Errorf("could not extract includes: %w", err)
 	}
+
 	delete(fd.obj, Includes)
+
 	return nil
 }
 
 func (fds filedatas) objs() []interface{} {
 	var objs []interface{}
+
 	for _, fd := range fds {
 		objs = append(objs, fd.obj)
 	}
+
 	return objs
 }
 
@@ -113,25 +130,31 @@ func (fd *filedata) isEmpty() bool {
 
 func recursiveExpand(b []byte) []byte {
 	const maxExpansions = 10
+
 	var c int
-	for i := 0; i < maxExpansions; i++ {
+
+	for range maxExpansions {
 		b, c = expand(b)
 		if c == 0 {
 			return b
 		}
 	}
+
 	return b
 }
 
-func expand(b []byte) ([]byte, int) {
+func expand(b []byte) (result []byte, count int) {
 	var c int
+
 	return []byte(os.Expand(string(b),
 		func(name string) string {
 			val, ok := os.LookupEnv(name)
 			if ok {
 				c++
+
 				return val
 			}
+
 			return "$" + name
 		})), c
 }

@@ -2,27 +2,36 @@ package conflate
 
 import (
 	"errors"
-	"github.com/stretchr/testify/assert"
 	pkgurl "net/url"
-	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
+var errTest = errors.New("my error")
+
 func testFiledataNew(t *testing.T, data []byte, path string) (filedata, error) {
+	t.Helper()
+
 	url, err := pkgurl.Parse(path)
 	assert.Nil(t, err)
-	return newFiledata(data, *url)
+
+	return newFiledata(data, url)
 }
 
 func testFiledataNewAssert(t *testing.T, data []byte, path string) filedata {
+	t.Helper()
+
 	fd, err := testFiledataNew(t, data, path)
 	assert.Nil(t, err)
+
 	return fd
 }
 
 func TestFiledata_WrapErrorNil(t *testing.T) {
 	fd, err := testFiledataNew(t, testMarshalJSON, "myurl")
 	assert.Nil(t, err)
+
 	err = fd.wrapError(nil)
 	assert.Nil(t, err)
 }
@@ -30,20 +39,20 @@ func TestFiledata_WrapErrorNil(t *testing.T) {
 func TestFiledata_WrapError(t *testing.T) {
 	fd, err := testFiledataNew(t, testMarshalJSON, "myurl")
 	assert.Nil(t, err)
-	err = errors.New("My Error")
-	err = fd.wrapError(err)
+
+	err = fd.wrapError(errTest)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "My Error")
-	assert.Contains(t, err.Error(), "Error processing myurl")
+	assert.Contains(t, err.Error(), "my error")
+	assert.Contains(t, err.Error(), "error processing myurl")
 }
 
 func TestFiledata_WrapErrorBlank(t *testing.T) {
 	fd, err := testFiledataNew(t, testMarshalJSON, "")
 	assert.Nil(t, err)
-	err1 := errors.New("My Error")
-	err2 := fd.wrapError(err1)
+
+	err2 := fd.wrapError(errTest)
 	assert.NotNil(t, err2)
-	assert.Equal(t, err1, err2)
+	assert.Equal(t, errTest, err2)
 }
 
 func TestFiledata_JSONAsAny(t *testing.T) {
@@ -167,10 +176,12 @@ func TestFiledata_Includes(t *testing.T) {
 func TestFiledata_ExtractError(t *testing.T) {
 	old := getSchema
 	getSchema = func() map[string]interface{} { return map[string]interface{}{} }
+
 	defer func() { getSchema = old }()
+
 	_, err := testLoader.wrapFiledata([]byte(`{"includes": "not array"}`))
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Could not extract includes")
+	assert.Contains(t, err.Error(), "could not extract includes")
 }
 
 func TestFiledata_IncludesError(t *testing.T) {
@@ -180,20 +191,11 @@ func TestFiledata_IncludesError(t *testing.T) {
 }
 
 func TestFiledata_Expand(t *testing.T) {
-	w := os.Getenv("W")
-	x := os.Getenv("X")
-	y := os.Getenv("Y")
-	z := os.Getenv("Z")
-	os.Setenv("W", "$W")
-	os.Setenv("X", `"x"`)
-	os.Setenv("Y", `y`)
-	os.Setenv("Z", `$Y`)
-	defer func() {
-		os.Setenv("W", w)
-		os.Setenv("X", x)
-		os.Setenv("Y", y)
-		os.Setenv("Z", z)
-	}()
+	t.Setenv("W", "$W")
+	t.Setenv("X", `"x"`)
+	t.Setenv("Y", `y`)
+	t.Setenv("Z", `$Y`)
+
 	b := recursiveExpand([]byte(`{"W":"$W","X":$X,"Y":"$Y","Z":"$Z"}`))
 	assert.Equal(t, string(b), string(`{"W":"$W","X":"x","Y":"y","Z":"y"}`))
 }
@@ -209,9 +211,12 @@ func TestFiledatas_Unmarshal(t *testing.T) {
 
 func TestFiledatas_DifferentIncludes(t *testing.T) {
 	old := Includes
-	Includes = "using"
+
+	Includes = "use"
+
 	defer func() { Includes = old }()
-	fd, err := testLoader.wrapFiledata([]byte(`{"using":["test1", "test2"], "x": 1}`))
+
+	fd, err := testLoader.wrapFiledata([]byte(`{"use":["test1", "test2"], "x": 1}`))
 	assert.Nil(t, err)
 	assert.Equal(t, fd.includes, []string{"test1", "test2"})
 	assert.Nil(t, fd.obj[Includes])
@@ -221,7 +226,9 @@ func TestFiledatas_DifferentIncludes(t *testing.T) {
 func TestFiledatas_NoIncludes(t *testing.T) {
 	old := Includes
 	Includes = "using"
+
 	defer func() { Includes = old }()
+
 	fd, err := testLoader.wrapFiledata([]byte(`{"includes":["test1", "test2"]}`))
 	assert.Nil(t, err)
 	assert.Empty(t, fd.includes)
@@ -231,7 +238,9 @@ func TestFiledatas_NoIncludes(t *testing.T) {
 func TestFiledatas_IgnoreIncludes(t *testing.T) {
 	old := Includes
 	Includes = ""
+
 	defer func() { Includes = old }()
+
 	fd, err := testLoader.wrapFiledata([]byte(`{"":["test1", "test2"]}`))
 	assert.Nil(t, err)
 	assert.Empty(t, fd.includes)
