@@ -292,7 +292,7 @@ func testCryptoFormatCheckerIsFormatValid(t *testing.T, cryptoType cryptoType, g
 	assert.Nil(t, err)
 }
 
-//nolint:funlen // test case
+//nolint:funlen,gosec // test case
 func TestCryptoFormatCheckerIsFormat_Valid(t *testing.T) {
 	testCryptoFormatCheckerKeys := []struct {
 		ct  cryptoType

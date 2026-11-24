@@ -106,7 +106,7 @@ func (l *loader) loadDatumRecursive(parentUrls []*pkgurl.URL, url *pkgurl.URL, d
 		return nil, err
 	}
 
-	var allData filedatas
+	allData := make(filedatas, 0, len(childData)+1)
 
 	allData = append(allData, childData...)
 	allData = append(allData, *data)
@@ -136,6 +136,7 @@ func (l *loader) wrapFiledatas(bytes ...[]byte) (filedatas, error) {
 func loadURL(url *pkgurl.URL) ([]byte, error) {
 	if url.Scheme == "file" {
 		// attempt to load locally handling case where we are loading from fifo etc
+		//nolint:gosec // G703: path comes from trusted server configuration and should allow ..
 		b, err := os.ReadFile(getPath(url.Path))
 		if err == nil {
 			return b, nil
@@ -154,8 +155,9 @@ func loadURL(url *pkgurl.URL) ([]byte, error) {
 	}
 
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error when closing response body: %v", err.Error())
+		err := resp.Body.Close()
+		if err != nil {
+			log.Printf("error when closing response body: %q", err)
 		}
 	}()
 
@@ -187,8 +189,9 @@ func loadConfigFromBucket(url *pkgurl.URL) ([]byte, error) {
 	}
 
 	defer func() {
-		if err := rc.Close(); err != nil {
-			log.Printf("error when closing the bucket handler reader: %v", err.Error())
+		err := rc.Close()
+		if err != nil {
+			log.Printf("error when closing the bucket handler reader: %q", err)
 		}
 	}()
 
@@ -213,7 +216,6 @@ func newTransport() *http.Transport {
 		DialContext: (&net.Dialer{
 			Timeout:   timeout * time.Second,
 			KeepAlive: timeout * time.Second,
-			DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          conns,
 		IdleConnTimeout:       idleConnTimeout * time.Second,

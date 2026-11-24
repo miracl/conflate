@@ -11,7 +11,7 @@ import (
 type filedata struct {
 	url      *pkgurl.URL
 	data     []byte
-	obj      map[string]interface{}
+	obj      map[string]any
 	includes []string
 }
 
@@ -20,7 +20,7 @@ var emptyFiledata = filedata{}
 type filedatas []filedata
 
 // UnmarshallerFunc defines the type of function used for unmarshalling data.
-type UnmarshallerFunc func([]byte, interface{}) error
+type UnmarshallerFunc func([]byte, any) error
 
 // UnmarshallerFuncs defines the type for a slice of UnmarshallerFunc.
 type UnmarshallerFuncs []UnmarshallerFunc
@@ -114,9 +114,7 @@ func (fd *filedata) extractIncludes() error {
 	return nil
 }
 
-func (fds filedatas) objs() []interface{} {
-	var objs []interface{}
-
+func (fds filedatas) objs() (objs []any) {
 	for _, fd := range fds {
 		objs = append(objs, fd.obj)
 	}
@@ -161,21 +159,22 @@ func expand(b []byte) (result []byte, count int) {
 
 var getSchema = getDefaultSchema
 
-func getDefaultSchema() map[string]interface{} {
-	return map[string]interface{}{
-		"anyOf": []interface{}{
-			map[string]interface{}{
+//nolint:goconst // explicit definition
+func getDefaultSchema() map[string]any {
+	return map[string]any{
+		"anyOf": []any{
+			map[string]any{
 				"type": "object",
-				"properties": map[string]interface{}{
-					Includes: map[string]interface{}{
+				"properties": map[string]any{
+					Includes: map[string]any{
 						"type": "array",
-						"items": map[string]interface{}{
+						"items": map[string]any{
 							"type": "string",
 						},
 					},
 				},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"type": "null",
 			},
 		},

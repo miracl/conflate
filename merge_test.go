@@ -9,7 +9,7 @@ import (
 )
 
 func TestMergeTo(t *testing.T) {
-	var toData interface{}
+	var toData any
 
 	data1 := 1
 	data2 := 2
@@ -21,9 +21,9 @@ func TestMergeTo(t *testing.T) {
 }
 
 func TestMergeTo_MergeError(t *testing.T) {
-	var toData interface{}
+	var toData any
 
-	fromData := make(map[string]interface{})
+	fromData := make(map[string]any)
 	err := mergeTo(toData, fromData)
 	assert.NotNil(t, err)
 }
@@ -71,8 +71,8 @@ func TestMerge_SimpleFloat(t *testing.T) {
 }
 
 func TestMerge_SimpleMap(t *testing.T) {
-	toData := map[string]interface{}{"x": 1}
-	fromData := map[string]interface{}{"x": 2, "y": 2}
+	toData := map[string]any{"x": 1}
+	fromData := map[string]any{"x": 2, "y": 2}
 	err := merge(&toData, fromData)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, toData["x"])
@@ -80,39 +80,39 @@ func TestMerge_SimpleMap(t *testing.T) {
 }
 
 func TestMerge_SimpleSlice(t *testing.T) {
-	toData := []interface{}{1, 2, 3}
-	fromData := []interface{}{4, 5, 6}
+	toData := []any{1, 2, 3}
+	fromData := []any{4, 5, 6}
 	err := merge(&toData, fromData)
 	assert.Nil(t, err)
-	assert.Equal(t, toData, []interface{}{1, 2, 3, 4, 5, 6})
+	assert.Equal(t, toData, []any{1, 2, 3, 4, 5, 6})
 }
 
 func TestMerge_ToNil(t *testing.T) {
-	fromData := make(map[string]interface{})
+	fromData := make(map[string]any)
 	err := merge(nil, fromData)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "must not be nil")
 }
 
 func TestMerge_ToNotPtr(t *testing.T) {
-	fromData := make(map[string]interface{})
-	toData := make(map[string]interface{})
+	fromData := make(map[string]any)
+	toData := make(map[string]any)
 	err := merge(toData, fromData)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "must be a pointer")
 }
 
 func TestMerge_FromNil(t *testing.T) {
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 	err := merge(&data, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, data, data)
 }
 
 func TestMerge_ToValNil(t *testing.T) {
-	fromData := make(map[string]interface{})
+	fromData := make(map[string]any)
 
-	var toData interface{}
+	var toData any
 
 	err := merge(&toData, fromData)
 	assert.Nil(t, err)
@@ -121,14 +121,14 @@ func TestMerge_ToValNil(t *testing.T) {
 
 func TestMerge_FromMapInvalid(t *testing.T) {
 	fromData := make(map[int]int)
-	toData := make(map[string]interface{})
+	toData := make(map[string]any)
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "source value must be a map[string]interface{}")
 }
 
 func TestMerge_ToMapInvalid(t *testing.T) {
-	fromData := make(map[string]interface{})
+	fromData := make(map[string]any)
 	toData := make(map[int]int)
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
@@ -137,14 +137,14 @@ func TestMerge_ToMapInvalid(t *testing.T) {
 
 func TestMerge_FromSliceInvalid(t *testing.T) {
 	fromData := make([]int, 0)
-	toData := make([]interface{}, 0)
+	toData := make([]any, 0)
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "source value must be a []interface{}")
 }
 
 func TestMerge_ToSliceInvalid(t *testing.T) {
-	fromData := make([]interface{}, 0)
+	fromData := make([]any, 0)
 	toData := make([]int, 0)
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
@@ -168,22 +168,22 @@ func TestMerge_IntToMapInvalid(t *testing.T) {
 }
 
 func TestMerge_BadPropertyMerge(t *testing.T) {
-	toData := map[string]interface{}{"x": 1}
-	fromData := map[string]interface{}{"x": map[string]string{}}
+	toData := map[string]any{"x": 1}
+	fromData := map[string]any{"x": map[string]string{}}
 	err := merge(&toData, fromData)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "failed to merge object property")
 }
 
 func TestMerge_Equal(t *testing.T) {
-	toData := map[string]interface{}{"x": 1}
-	fromData := map[string]interface{}{"x": 1}
+	toData := map[string]any{"x": 1}
+	fromData := map[string]any{"x": 1}
 	err := merge(&toData, fromData)
 	assert.Nil(t, err)
 	assert.Equal(t, toData, fromData)
 }
 
-func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
+func testMergeCheck(t *testing.T, merged, data1, data2 any) {
 	t.Helper()
 
 	mergedVal := reflect.ValueOf(merged)
@@ -208,31 +208,31 @@ func testMergeCheck(t *testing.T, merged, data1, data2 interface{}) {
 	}
 }
 
-func testMergeCheckMap(t *testing.T, merged, data1, data2 interface{}) {
+func testMergeCheckMap(t *testing.T, merged, data1, data2 any) {
 	t.Helper()
 
 	var (
-		mergedMap, data1Map, data2Map map[string]interface{}
+		mergedMap, data1Map, data2Map map[string]any
 		ok                            bool
 	)
 
 	if merged != nil {
-		mergedMap, ok = merged.(map[string]interface{})
+		mergedMap, ok = merged.(map[string]any)
 		assert.True(t, ok)
 	}
 
 	if data1 != nil {
-		data1Map, ok = data1.(map[string]interface{})
+		data1Map, ok = data1.(map[string]any)
 		assert.True(t, ok)
 	}
 
 	if data2 != nil {
-		data2Map, ok = data2.(map[string]interface{})
+		data2Map, ok = data2.(map[string]any)
 		assert.True(t, ok)
 	}
 
 	for name, mergedItem := range mergedMap {
-		var data1Item, data2Item interface{}
+		var data1Item, data2Item any
 
 		if data1Map != nil {
 			data1Item = data1Map[name]
@@ -246,33 +246,34 @@ func testMergeCheckMap(t *testing.T, merged, data1, data2 interface{}) {
 	}
 }
 
-func testMergeCheckSlice(t *testing.T, merged, data1, data2 interface{}) {
+//nolint:prealloc // ok for a test
+func testMergeCheckSlice(t *testing.T, merged, data1, data2 any) {
 	t.Helper()
 
 	var (
-		mergedArr, data1Arr, data2Arr []interface{}
+		mergedArr, data1Arr, data2Arr []any
 		ok                            bool
 	)
 
 	if merged != nil {
-		mergedArr, ok = merged.([]interface{})
+		mergedArr, ok = merged.([]any)
 		assert.True(t, ok)
 	}
 
 	if data1 != nil {
-		data1Arr, ok = data1.([]interface{})
+		data1Arr, ok = data1.([]any)
 		assert.True(t, ok)
 	}
 
 	if data2 != nil {
-		data2Arr, ok = data2.([]interface{})
+		data2Arr, ok = data2.([]any)
 		assert.True(t, ok)
 	}
 
 	assert.Equal(t, len(data1Arr)+len(data2Arr), len(mergedArr))
 
-	data1Pad := make([]interface{}, len(data2Arr))
-	data2Pad := make([]interface{}, len(data1Arr))
+	data1Pad := make([]any, len(data2Arr))
+	data2Pad := make([]any, len(data1Arr))
 	data1Arr = append(data1Arr, data1Pad...)
 	data2Arr = append(data2Pad, data2Arr...)
 
@@ -288,10 +289,10 @@ func testMergeCheckSlice(t *testing.T, merged, data1, data2 interface{}) {
 
 // ----------
 
-func testMergeGetData(t *testing.T, data []byte) interface{} {
+func testMergeGetData(t *testing.T, data []byte) any {
 	t.Helper()
 
-	var out interface{}
+	var out any
 
 	err := json.Unmarshal(data, &out)
 	assert.Nil(t, err)

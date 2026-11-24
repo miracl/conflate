@@ -44,7 +44,7 @@ func TestFromFiles_IncludesRemoved(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 
-	var testData map[string]interface{}
+	var testData map[string]any
 
 	err = c.Unmarshal(&testData)
 	assert.Nil(t, err)
@@ -114,7 +114,8 @@ func TestFromFilesRemote(t *testing.T) {
 				}
 
 				fileServer.ServeHTTP(w, r)
-			}),
+			},
+		),
 	}
 
 	go func() {
@@ -247,7 +248,7 @@ func TestFromFiles_ApplyDefaultsError(t *testing.T) {
 	s, err := NewSchemaFile("testdata/test.schema.json")
 	assert.Nil(t, err)
 
-	s.s = []interface{}{"not a map"}
+	s.s = []any{"not a map"}
 	err = c.ApplyDefaults(s)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "the defaults could not be applied")

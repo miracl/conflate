@@ -9,7 +9,7 @@ var Includes = "includes"
 
 // Conflate contains a 'working' merged data set and optionally a JSON v4 schema.
 type Conflate struct {
-	data   interface{}
+	data   any
 	loader loader
 }
 
@@ -61,7 +61,7 @@ func FromData(data ...[]byte) (*Conflate, error) {
 }
 
 // FromGo constructs a new Conflate instance populated with the given golang objects.
-func FromGo(data ...interface{}) (*Conflate, error) {
+func FromGo(data ...any) (*Conflate, error) {
 	c := New()
 
 	err := c.AddGo(data...)
@@ -102,7 +102,7 @@ func (c *Conflate) AddURLs(urls ...*url.URL) error {
 }
 
 // AddGo recursively merges the given (json-serializable) golang objects into the Conflate instance.
-func (c *Conflate) AddGo(objs ...interface{}) error {
+func (c *Conflate) AddGo(objs ...any) error {
 	data, err := jsonMarshalAll(objs...)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (c *Conflate) Validate(s *Schema) error {
 }
 
 // Unmarshal extracts the data as a Golang object.
-func (c *Conflate) Unmarshal(out interface{}) error {
+func (c *Conflate) Unmarshal(out any) error {
 	return jsonMarshalUnmarshal(c.data, out)
 }
 
