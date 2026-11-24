@@ -43,15 +43,15 @@ func (errs formatErrors) clear() {
 	formatErrs = formatErrors{}
 }
 
-func (errs formatErrors) add(name, value interface{}, err error) {
+func (errs formatErrors) add(name, value any, err error) {
 	errs[errs.key(name, value)] = err
 }
 
-func (errs formatErrors) get(name, value interface{}) error {
+func (errs formatErrors) get(name, value any) error {
 	return errs[errs.key(name, value)]
 }
 
-func (errs formatErrors) key(name, value interface{}) string {
+func (errs formatErrors) key(name, value any) string {
 	return fmt.Sprintf("%v#%v", name, value)
 }
 
@@ -64,11 +64,12 @@ func newXMLFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 	return name, xmlFormatChecker{name: name}
 }
 
-func (f xmlFormatChecker) IsFormat(input interface{}) bool {
+func (f xmlFormatChecker) IsFormat(input any) bool {
 	var ferr error
 
 	if s, ok := input.(string); ok {
-		if err := xml.Unmarshal([]byte(s), new(interface{})); err != nil {
+		err := xml.Unmarshal([]byte(s), new(any))
+		if err != nil {
 			ferr = fmt.Errorf("failed to parse xml: %w", err)
 		}
 	} else {
@@ -95,14 +96,16 @@ func newXMLTemplateFormatChecker(name string) (string, gojsonschema.FormatChecke
 	return name, xmlTemplateFormatChecker{name: name, tags: regexp.MustCompile(`{{[^{}]*}}`)}
 }
 
-func (f xmlTemplateFormatChecker) IsFormat(input interface{}) bool {
+func (f xmlTemplateFormatChecker) IsFormat(input any) bool {
 	var ferr error
 
 	if s, ok := input.(string); ok {
 		s = f.tags.ReplaceAllString(s, "")
 		if s != "" {
-			var v interface{}
-			if err := xml.Unmarshal([]byte(s), &v); err != nil {
+			var v any
+
+			err := xml.Unmarshal([]byte(s), &v)
+			if err != nil {
 				ferr = fmt.Errorf("failed to parse xml: %w", err)
 			}
 		}
@@ -130,13 +133,14 @@ func newHTMLFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 	return name, htmlFormatChecker{name: name, tags: regexp.MustCompile(`{{[^{}]*}}`)}
 }
 
-func (f htmlFormatChecker) IsFormat(input interface{}) bool {
+func (f htmlFormatChecker) IsFormat(input any) bool {
 	var ferr error
 
 	if s, ok := input.(string); ok {
 		s = f.tags.ReplaceAllString(s, "")
 
-		if _, err := html.Parse(strings.NewReader(s)); err != nil {
+		_, err := html.Parse(strings.NewReader(s))
+		if err != nil {
 			ferr = fmt.Errorf("failed to parse html: %w", err)
 		}
 	} else {
@@ -176,7 +180,7 @@ func newCryptoFormatChecker(name string, cType cryptoType) (string, gojsonschema
 	}
 }
 
-func (f cryptoFormatChecker) IsFormat(input interface{}) bool {
+func (f cryptoFormatChecker) IsFormat(input any) bool {
 	s, ok := input.(string)
 	if !ok {
 		formatErrs.add(f.name, input, errRequiredString)
@@ -234,11 +238,12 @@ func newRegexFormatChecker(name string) (string, gojsonschema.FormatChecker) {
 	return name, regexFormatChecker{name: name}
 }
 
-func (f regexFormatChecker) IsFormat(input interface{}) bool {
+func (f regexFormatChecker) IsFormat(input any) bool {
 	var ferr error
 
 	if s, ok := input.(string); ok {
-		if _, err := regexp.Compile(s); err != nil {
+		_, err := regexp.Compile(s)
+		if err != nil {
 			ferr = fmt.Errorf("failed to parse regular expression: %w", err)
 		}
 	} else {

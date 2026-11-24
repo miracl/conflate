@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-func mergeTo(toData interface{}, fromData ...interface{}) error {
+func mergeTo(toData any, fromData ...any) error {
 	for _, fromDatum := range fromData {
 		err := merge(toData, fromDatum)
 		if err != nil {
@@ -16,11 +16,11 @@ func mergeTo(toData interface{}, fromData ...interface{}) error {
 	return nil
 }
 
-func merge(pToData, fromData interface{}) error {
+func merge(pToData, fromData any) error {
 	return mergeRecursive(rootContext(), pToData, fromData)
 }
 
-func mergeRecursive(ctx context, pToData, fromData interface{}) error {
+func mergeRecursive(ctx context, pToData, fromData any) error {
 	if pToData == nil {
 		return &contextError{
 			context: ctx,
@@ -29,7 +29,7 @@ func mergeRecursive(ctx context, pToData, fromData interface{}) error {
 	}
 
 	pToVal := reflect.ValueOf(pToData)
-	if pToVal.Kind() != reflect.Ptr {
+	if pToVal.Kind() != reflect.Pointer {
 		return &contextError{
 			context: ctx,
 			msg:     "the destination variable must be a pointer",
@@ -66,8 +66,8 @@ func mergeRecursive(ctx context, pToData, fromData interface{}) error {
 	return err
 }
 
-func mergeMapRecursive(ctx context, toData, fromData interface{}) error {
-	fromProps, ok := fromData.(map[string]interface{})
+func mergeMapRecursive(ctx context, toData, fromData any) error {
+	fromProps, ok := fromData.(map[string]any)
 	if !ok {
 		return &contextError{
 			context: ctx,
@@ -75,7 +75,7 @@ func mergeMapRecursive(ctx context, toData, fromData interface{}) error {
 		}
 	}
 
-	toProps, ok := toData.(map[string]interface{})
+	toProps, ok := toData.(map[string]any)
 	if toProps == nil || !ok {
 		return &contextError{
 			context: ctx,
@@ -102,8 +102,8 @@ func mergeMapRecursive(ctx context, toData, fromData interface{}) error {
 	return nil
 }
 
-func mergeSliceRecursive(ctx context, toVal reflect.Value, toData, fromData interface{}) error {
-	fromItems, ok := fromData.([]interface{})
+func mergeSliceRecursive(ctx context, toVal reflect.Value, toData, fromData any) error {
+	fromItems, ok := fromData.([]any)
 	if !ok {
 		return &contextError{
 			context: ctx,
@@ -111,7 +111,7 @@ func mergeSliceRecursive(ctx context, toVal reflect.Value, toData, fromData inte
 		}
 	}
 
-	toItems, ok := toData.([]interface{})
+	toItems, ok := toData.([]any)
 	if toItems == nil || !ok {
 		return &contextError{
 			context: ctx,
@@ -125,7 +125,7 @@ func mergeSliceRecursive(ctx context, toVal reflect.Value, toData, fromData inte
 	return nil
 }
 
-func mergeDefaultRecursive(ctx context, toVal, fromVal reflect.Value, toData, fromData interface{}) error {
+func mergeDefaultRecursive(ctx context, toVal, fromVal reflect.Value, toData, fromData any) error {
 	if reflect.DeepEqual(toData, fromData) {
 		return nil
 	}

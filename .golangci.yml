@@ -1,0 +1,160 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - dogsled
+    - dupl
+    - durationcheck
+    - embeddedstructfieldcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exptostd
+    - fatcontext
+    - forcetypeassert
+    - funcorder
+    - funlen
+    - gocheckcompilerdirectives
+    - gochecknoinits
+    - gochecksumtype
+    - goconst
+    - gocritic
+    - gocyclo
+    - godoclint
+    - godot
+    - goprintffuncname
+    - gosec
+    - inamedparam
+    - ineffassign
+    - intrange
+    - iotamixing
+    - mirror
+    - misspell
+    - mnd
+    - modernize
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nlreturn
+    - noctx
+    - noinlineerr
+    - nolintlint
+    - nosprintfhostport
+    - perfsprint
+    - prealloc
+    - predeclared
+    - reassign
+    - revive
+    - rowserrcheck
+    - sloglint
+    - sqlclosecheck
+    - staticcheck
+    - tagalign
+    - testableexamples
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    # - wrapcheck
+    - wsl_v5
+  settings:
+    copyloopvar:
+      check-alias: true
+    dupl:
+      threshold: 100
+    embeddedstructfieldcheck:
+      forbid-mutex: true
+    errcheck:
+      disable-default-exclusions: true
+      check-type-assertions: true
+      check-blank: true
+    errchkjson:
+      report-no-exported: true
+    funlen:
+      lines: 100
+      statements: 50
+      ignore-comments: true
+    goconst:
+      ignore-tests: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 15
+    gosec:
+      excludes:
+        - G117
+        - G704
+    perfsprint:
+      err-error: true
+      loop-other-ops: true
+    sloglint:
+      static-msg: true
+      key-naming-case: camel
+      args-on-sep-lines: true
+      context: all
+    tagalign:
+      sort: false
+    unused:
+      exported-fields-are-used: false
+      field-writes-are-uses: false
+      generated-is-used: false
+      local-variables-are-used: false
+    wsl_v5:
+      allow-first-in-block: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - _generated.go
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      no-inline-comments: true
+      no-prefix-comments: true
+    gofmt:
+      simplify: false
+    gofumpt:
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
+  exclusions:
+    generated: lax
+    paths:
+      - _generated.go
+      - third_party$
+      - builtin$
+      - examples$

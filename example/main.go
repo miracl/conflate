@@ -10,7 +10,7 @@ import (
 )
 
 // example of a custom unmarshaller for JSON.
-func customJSONUnmarshal(data []byte, out interface{}) error {
+func customJSONUnmarshal(data []byte, out any) error {
 	fmt.Println("Using custom JSON Unmarshaller")
 
 	return conflate.JSONUnmarshal(data, out)
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	// unmarshal merged data to a struct/interface
-	var data interface{}
+	var data any
 
 	err = c.Unmarshal(&data)
 	if err != nil {

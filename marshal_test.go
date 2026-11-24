@@ -18,7 +18,7 @@ func TestJSONMarshalAll(t *testing.T) {
 }
 
 func TestJSONMarshalAll_Error(t *testing.T) {
-	mockMarshal := func(_ interface{}) ([]byte, error) {
+	mockMarshal := func(_ any) ([]byte, error) {
 		return nil, errTest
 	}
 	data, err := jsonMarshalAll(mockMarshal, "a")
@@ -30,7 +30,7 @@ func TestJSONMarshalAll_Error(t *testing.T) {
 // --------
 
 func TestJSONMarshalUnmarshal(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := jsonMarshalUnmarshal(testMarshalData, &out)
 	assert.Nil(t, err)
@@ -38,7 +38,7 @@ func TestJSONMarshalUnmarshal(t *testing.T) {
 }
 
 func TestJSONMarshalUnmarshal_MarshalError(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := jsonMarshalUnmarshal(testMarshalDataInvalid, out)
 	assert.NotNil(t, err)
@@ -54,7 +54,7 @@ func TestJSONMarshalUnmarshal_UnmarshalError(t *testing.T) {
 // --------
 
 func TestJSONUnmarshal(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := JSONUnmarshal(testMarshalJSON, &out)
 	assert.Nil(t, err)
@@ -62,7 +62,7 @@ func TestJSONUnmarshal(t *testing.T) {
 }
 
 func TestJSONUnmarshal_Error(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := JSONUnmarshal(testMarshalInvalid, &out)
 	assert.NotNil(t, err)
@@ -70,7 +70,7 @@ func TestJSONUnmarshal_Error(t *testing.T) {
 }
 
 func TestYAMLUnmarshal(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := YAMLUnmarshal(testMarshalYAML, &out)
 	assert.Nil(t, err)
@@ -78,7 +78,7 @@ func TestYAMLUnmarshal(t *testing.T) {
 }
 
 func TestYAMLUnmarshal_Error(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := YAMLUnmarshal(testMarshalInvalid, &out)
 	assert.NotNil(t, err)
@@ -86,7 +86,7 @@ func TestYAMLUnmarshal_Error(t *testing.T) {
 }
 
 func TestTOMLUnmarshal(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := TOMLUnmarshal(testMarshalTOML, &out)
 	assert.Nil(t, err)
@@ -94,7 +94,7 @@ func TestTOMLUnmarshal(t *testing.T) {
 }
 
 func TestTOMLUnmarshal_Error(t *testing.T) {
-	var out interface{}
+	var out any
 
 	err := TOMLUnmarshal(testMarshalInvalid, &out)
 	assert.NotNil(t, err)
@@ -147,7 +147,7 @@ func TestTOMLMarshal_PanicError(t *testing.T) {
 
 var (
 	testValue              = `value!£$%^&*()_+-={}[]:@~;'#<>?,./|`
-	testMarshalData        = map[string]interface{}{"key": testValue}
+	testMarshalData        = map[string]any{"key": testValue}
 	testMarshalDataInvalid = func() {}
 	testMarshalJSON        = []byte(`{
   "key": "` + testValue + `"

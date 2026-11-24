@@ -41,7 +41,7 @@ func TestNewSchemaGo_ValidateSchema(t *testing.T) {
 	metaSchema = nil
 	data := `{"title": "testdata"}`
 
-	var schema interface{}
+	var schema any
 
 	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
@@ -55,7 +55,7 @@ func TestNewSchemaGo_ValidateSchema(t *testing.T) {
 func TestNewSchemaGo_ValidateSchemaAnyOf(t *testing.T) {
 	data := `{ "type": "object", "properties": { "test": { "anyOf": [ { "type": "integer" } ] } } }`
 
-	var schema interface{}
+	var schema any
 
 	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
@@ -77,7 +77,7 @@ func TestNewSchemaGo_ValidateSchemaInvalidMetaData(t *testing.T) {
 	metaSchemaData = map[string][]byte{draft04: []byte(`{"invalid": "json" `)}
 	data := `{"title": "test"}`
 
-	var schema interface{}
+	var schema any
 
 	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
@@ -89,7 +89,7 @@ func TestNewSchemaGo_ValidateSchemaInvalidMetaData(t *testing.T) {
 }
 
 func TestUpdateMetaSchema_InvalidSchema(t *testing.T) {
-	var schema interface{}
+	var schema any
 
 	_, err := updateMetaSchema(schema)
 	assert.NotNil(t, err)
@@ -100,7 +100,7 @@ func TestUpdateMetaSchema_DefaultDraft(t *testing.T) {
 	metaSchema = nil
 	data := `{"no": "draft"}`
 
-	var schema interface{}
+	var schema any
 
 	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
@@ -109,7 +109,8 @@ func TestUpdateMetaSchema_DefaultDraft(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, draft, draft04)
 
-	var schemaData interface{}
+	var schemaData any
+
 	err = JSONUnmarshal(metaSchemaData[draft], &schemaData)
 	assert.Nil(t, err)
 	assert.Equal(t, schemaData, metaSchema)
@@ -119,7 +120,7 @@ func TestUpdateMetaSchema_ReadDraft(t *testing.T) {
 	metaSchema = nil
 	data := `{"$schema": "http://json-schema.org/draft-06/schema#"}`
 
-	var schema interface{}
+	var schema any
 
 	err := JSONUnmarshal([]byte(data), &schema)
 	assert.Nil(t, err)
@@ -128,7 +129,7 @@ func TestUpdateMetaSchema_ReadDraft(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, draft, draft06)
 
-	var schemaData interface{}
+	var schemaData any
 
 	err = JSONUnmarshal(metaSchemaData[draft], &schemaData)
 	assert.Nil(t, err)
@@ -143,7 +144,7 @@ func TestNewSchemaGo_ValidateInvalidSchema(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	var data, schema interface{}
+	var data, schema any
 
 	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
@@ -156,7 +157,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestValidate_ValidateSchemaError(t *testing.T) {
-	var data, schema interface{}
+	var data, schema any
 
 	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
@@ -167,7 +168,7 @@ func TestValidate_ValidateSchemaError(t *testing.T) {
 }
 
 func TestValidate_NotValid(t *testing.T) {
-	var data, schema map[string]interface{}
+	var data, schema map[string]any
 
 	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
@@ -178,7 +179,7 @@ func TestValidate_NotValid(t *testing.T) {
 	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 
-	obj, ok := data["obj"].(map[string]interface{})
+	obj, ok := data["obj"].(map[string]any)
 	assert.True(t, ok)
 
 	obj["str"] = 123
@@ -192,8 +193,8 @@ func TestValidate_NotValid(t *testing.T) {
 
 func TestValidate_CustomFormatError(t *testing.T) {
 	var (
-		data   interface{}
-		schema map[string]interface{}
+		data   any
+		schema map[string]any
 	)
 
 	err := JSONUnmarshal(testSchemaData, &data)
@@ -202,9 +203,9 @@ func TestValidate_CustomFormatError(t *testing.T) {
 	err = JSONUnmarshal(testSchema, &schema)
 	assert.Nil(t, err)
 
-	props, ok := schema["properties"].(map[string]interface{})
+	props, ok := schema["properties"].(map[string]any)
 	assert.True(t, ok)
-	str, ok := props["str"].(map[string]interface{})
+	str, ok := props["str"].(map[string]any)
 	assert.True(t, ok)
 
 	str["format"] = "xml-template"
@@ -219,7 +220,7 @@ func TestValidate_CustomFormatError(t *testing.T) {
 // -----------
 
 func TestApplyDefaults_DataNil(t *testing.T) {
-	schema := map[string]interface{}{}
+	schema := map[string]any{}
 	err := applyDefaults(nil, schema)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "destination value must not be nil")
@@ -228,7 +229,7 @@ func TestApplyDefaults_DataNil(t *testing.T) {
 func TestApplyDefaults_DataNotPtr(t *testing.T) {
 	data := 1
 
-	schema := map[string]interface{}{}
+	schema := map[string]any{}
 	err := applyDefaults(data, schema)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "destination value must be a pointer")
@@ -236,7 +237,7 @@ func TestApplyDefaults_DataNotPtr(t *testing.T) {
 
 func TestApplyDefaults_SchemaNotMap(t *testing.T) {
 	data := 1
-	schema := map[string]interface{}{"anyOf": nil}
+	schema := map[string]any{"anyOf": nil}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, data)
@@ -244,7 +245,7 @@ func TestApplyDefaults_SchemaNotMap(t *testing.T) {
 
 func TestApplyDefaults_SchemaNoType(t *testing.T) {
 	data := 1
-	schema := map[string]interface{}{}
+	schema := map[string]any{}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Schema section does not have a valid 'type' attribute")
@@ -255,47 +256,47 @@ func TestApplyDefaults_SchemaNoType(t *testing.T) {
 
 func TestApplyDefaults_NodeNotObject(t *testing.T) {
 	data := 1
-	schema := map[string]interface{}{"type": "object"}
+	schema := map[string]any{"type": "object"}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "node should be an 'object'")
 }
 
 func TestApplyDefaults_ObjectDefault(t *testing.T) {
-	var data interface{}
+	var data any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"default": map[string]interface{}{
+		"default": map[string]any{
 			"val": 1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}{"val": 1}, data)
+	assert.Equal(t, map[string]any{"val": 1}, data)
 }
 
 func TestApplyDefaults_ObjectDefaultNotApplied(t *testing.T) {
-	data := map[string]interface{}{"other": 1}
-	schema := map[string]interface{}{
+	data := map[string]any{"other": 1}
+	schema := map[string]any{
 		"type": "object",
-		"default": map[string]interface{}{
+		"default": map[string]any{
 			"val": 1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}{"other": 1}, data)
+	assert.Equal(t, map[string]any{"other": 1}, data)
 }
 
 func TestApplyDefaults_ObjectPropertyDefault(t *testing.T) {
-	var data interface{}
+	var data any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type":    "object",
-		"default": map[string]interface{}{},
-		"properties": map[string]interface{}{
-			"val": map[string]interface{}{
+		"default": map[string]any{},
+		"properties": map[string]any{
+			"val": map[string]any{
 				"type":    "integer",
 				"default": 1,
 			},
@@ -303,16 +304,16 @@ func TestApplyDefaults_ObjectPropertyDefault(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}{"val": 1}, data)
+	assert.Equal(t, map[string]any{"val": 1}, data)
 }
 
 func TestApplyDefaults_ObjectPropertyNilMap(t *testing.T) {
-	var data map[string]interface{}
+	var data map[string]any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"val": map[string]interface{}{
+		"properties": map[string]any{
+			"val": map[string]any{
 				"type":    "integer",
 				"default": 1,
 			},
@@ -320,15 +321,15 @@ func TestApplyDefaults_ObjectPropertyNilMap(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}(nil), data)
+	assert.Equal(t, map[string]any(nil), data)
 }
 
 func TestApplyDefaults_ObjectPropertyEmptyMap(t *testing.T) {
-	data := map[string]interface{}{}
-	schema := map[string]interface{}{
+	data := map[string]any{}
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"val": map[string]interface{}{
+		"properties": map[string]any{
+			"val": map[string]any{
 				"type":    "integer",
 				"default": 1,
 			},
@@ -336,16 +337,16 @@ func TestApplyDefaults_ObjectPropertyEmptyMap(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}{"val": 1}, data)
+	assert.Equal(t, map[string]any{"val": 1}, data)
 }
 
 func TestApplyDefaults_ObjectPropertyDefaultNotApplied(t *testing.T) {
-	data := map[string]interface{}{"other": 1}
-	schema := map[string]interface{}{
+	data := map[string]any{"other": 1}
+	schema := map[string]any{
 		"type":    "object",
-		"default": map[string]interface{}{},
-		"properties": map[string]interface{}{
-			"val": map[string]interface{}{
+		"default": map[string]any{},
+		"properties": map[string]any{
+			"val": map[string]any{
 				"type":    "integer",
 				"default": 1,
 			},
@@ -353,16 +354,16 @@ func TestApplyDefaults_ObjectPropertyDefaultNotApplied(t *testing.T) {
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}{"val": 1, "other": 1}, data)
+	assert.Equal(t, map[string]any{"val": 1, "other": 1}, data)
 }
 
 func TestApplyDefaults_ObjectPropertyDefaultNoParentDefault(t *testing.T) {
-	var data interface{}
+	var data any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"val": map[string]interface{}{
+		"properties": map[string]any{
+			"val": map[string]any{
 				"type":    "integer",
 				"default": 1,
 			},
@@ -374,10 +375,10 @@ func TestApplyDefaults_ObjectPropertyDefaultNoParentDefault(t *testing.T) {
 }
 
 func TestApplyDefaults_ObjectPropertyFailed(t *testing.T) {
-	data := map[string]interface{}{}
-	schema := map[string]interface{}{
+	data := map[string]any{}
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
+		"properties": map[string]any{
 			"val": nil,
 		},
 	}
@@ -388,10 +389,10 @@ func TestApplyDefaults_ObjectPropertyFailed(t *testing.T) {
 }
 
 func TestApplyDefaults_ObjectAdditionalPropertyDefault(t *testing.T) {
-	data := map[string]interface{}{"val": nil}
-	schema := map[string]interface{}{
+	data := map[string]any{"val": nil}
+	schema := map[string]any{
 		"type": "object",
-		"additionalProperties": map[string]interface{}{
+		"additionalProperties": map[string]any{
 			"type":    "integer",
 			"default": 1,
 		},
@@ -402,10 +403,10 @@ func TestApplyDefaults_ObjectAdditionalPropertyDefault(t *testing.T) {
 }
 
 func TestApplyDefaults_ObjectAdditionalPropertyFailed(t *testing.T) {
-	data := map[string]interface{}{"val": 1}
-	schema := map[string]interface{}{
+	data := map[string]any{"val": 1}
+	schema := map[string]any{
 		"type":                 "object",
-		"additionalProperties": map[string]interface{}{},
+		"additionalProperties": map[string]any{},
 	}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
@@ -414,8 +415,8 @@ func TestApplyDefaults_ObjectAdditionalPropertyFailed(t *testing.T) {
 }
 
 func TestApplyDefaults_ObjectAdditionalPropertyBool(t *testing.T) {
-	data := map[string]interface{}{"val": 1}
-	schema := map[string]interface{}{
+	data := map[string]any{"val": 1}
+	schema := map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
 	}
@@ -424,11 +425,11 @@ func TestApplyDefaults_ObjectAdditionalPropertyBool(t *testing.T) {
 }
 
 func TestApplyDefaults_ArrayNoDefault(t *testing.T) {
-	var data interface{}
+	var data any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "array",
-		"items": map[string]interface{}{
+		"items": map[string]any{
 			"type":    "integer",
 			"default": 1,
 		},
@@ -439,111 +440,111 @@ func TestApplyDefaults_ArrayNoDefault(t *testing.T) {
 }
 
 func TestApplyDefaults_ArrayDefault(t *testing.T) {
-	var data interface{}
+	var data any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type":    "array",
-		"default": []interface{}{},
-		"items": map[string]interface{}{
+		"default": []any{},
+		"items": map[string]any{
 			"type":    "integer",
 			"default": 1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, []interface{}{}, data)
+	assert.Equal(t, []any{}, data)
 }
 
 func TestApplyDefaults_ArrayElementDefaultNil(t *testing.T) {
-	var data []interface{}
+	var data []any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "array",
-		"items": map[string]interface{}{
+		"items": map[string]any{
 			"type":    "integer",
 			"default": 1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, []interface{}(nil), data)
+	assert.Equal(t, []any(nil), data)
 }
 
 func TestApplyDefaults_ArrayElementDefault(t *testing.T) {
-	data := []interface{}{nil}
-	schema := map[string]interface{}{
+	data := []any{nil}
+	schema := map[string]any{
 		"type": "array",
-		"items": map[string]interface{}{
+		"items": map[string]any{
 			"type":    "integer",
 			"default": 1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, []interface{}{1}, data)
+	assert.Equal(t, []any{1}, data)
 }
 
 // --------
 
 func TestApplyDefaults_NodeNotSlice(t *testing.T) {
 	data := 1
-	schema := map[string]interface{}{"type": "array"}
+	schema := map[string]any{"type": "array"}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "node should be an 'array'", err.Error())
 }
 
 func TestApplyDefaults_SliceDefault(t *testing.T) {
-	var data interface{}
+	var data any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "array",
-		"default": []interface{}{
+		"default": []any{
 			1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, []interface{}{1}, data)
+	assert.Equal(t, []any{1}, data)
 }
 
 func TestApplyDefaults_SliceDefaultWithElementDefault(t *testing.T) {
-	var data interface{}
+	var data any
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "array",
-		"default": []interface{}{
+		"default": []any{
 			nil,
 		},
-		"items": map[string]interface{}{
+		"items": map[string]any{
 			"type":    "integer",
 			"default": 1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, []interface{}{1}, data)
+	assert.Equal(t, []any{1}, data)
 }
 
 func TestApplyDefaults_SliceElementDefault(t *testing.T) {
-	data := []interface{}{nil}
-	schema := map[string]interface{}{
+	data := []any{nil}
+	schema := map[string]any{
 		"type": "array",
-		"items": map[string]interface{}{
+		"items": map[string]any{
 			"type":    "integer",
 			"default": 1,
 		},
 	}
 	err := applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, []interface{}{1}, data)
+	assert.Equal(t, []any{1}, data)
 }
 
 func TestApplyDefaults_SliceFailed(t *testing.T) {
-	data := []interface{}{1}
-	schema := map[string]interface{}{
+	data := []any{1}
+	schema := map[string]any{
 		"type":  "array",
-		"items": map[string]interface{}{},
+		"items": map[string]any{},
 	}
 	err := applyDefaults(&data, schema)
 	assert.NotNil(t, err)
@@ -552,7 +553,7 @@ func TestApplyDefaults_SliceFailed(t *testing.T) {
 }
 
 func TestApplyDefaults_Empty(t *testing.T) {
-	var data, defaults, schema interface{}
+	var data, defaults, schema any
 
 	err := JSONUnmarshal(testSchemaDefaults, &defaults)
 	assert.Nil(t, err)
@@ -566,7 +567,7 @@ func TestApplyDefaults_Empty(t *testing.T) {
 }
 
 func TestApplyDefaults_NoDefaults(t *testing.T) {
-	var data, dataExpected, schema interface{}
+	var data, dataExpected, schema any
 
 	err := JSONUnmarshal(testSchemaData, &data)
 	assert.Nil(t, err)
@@ -584,8 +585,8 @@ func TestApplyDefaults_NoDefaults(t *testing.T) {
 
 func TestApplyDefaults_MissingIntFields(t *testing.T) {
 	var (
-		data   map[string]interface{}
-		schema interface{}
+		data   map[string]any
+		schema any
 	)
 
 	err := JSONUnmarshal(testSchemaData, &data)
@@ -596,20 +597,20 @@ func TestApplyDefaults_MissingIntFields(t *testing.T) {
 
 	delete(data, "int")
 	delete(data, "array_of_int")
-	obj, ok := data["obj"].(map[string]interface{})
+	obj, ok := data["obj"].(map[string]any)
 	assert.True(t, ok)
 	delete(obj, "int")
 
-	arr, ok := data["array_of_obj"].([]interface{})
+	arr, ok := data["array_of_obj"].([]any)
 	assert.True(t, ok)
-	arrObj, ok := arr[0].(map[string]interface{})
+	arrObj, ok := arr[0].(map[string]any)
 	assert.True(t, ok)
 	delete(arrObj, "int")
 
 	err = applyDefaults(&data, schema)
 	assert.Nil(t, err)
 	assert.Equal(t, 1.0, data["int"])
-	assert.Equal(t, []interface{}{1.0}, data["array_of_int"])
+	assert.Equal(t, []any{1.0}, data["array_of_int"])
 	assert.Equal(t, 1.0, obj["int"])
 	assert.Equal(t, 1.0, arrObj["int"])
 }
@@ -628,8 +629,8 @@ func TestApplyDefaults_Ref(t *testing.T) {
 		}
 	}`)
 		rawData = []byte(` { "int": null, "obj": { "int": null} }`)
-		data    map[string]interface{}
-		schema  interface{}
+		data    map[string]any
+		schema  any
 	)
 
 	err := JSONUnmarshal(rawData, &data)
@@ -640,7 +641,7 @@ func TestApplyDefaults_Ref(t *testing.T) {
 
 	err = applyDefaults(&data, schema)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]interface{}{"int": 1.0, "obj": map[string]interface{}{"int": 1.0}}, data)
+	assert.Equal(t, map[string]any{"int": 1.0, "obj": map[string]any{"int": 1.0}}, data)
 }
 
 func TestApplyDefaults_RefNotStringError(t *testing.T) {
@@ -653,8 +654,8 @@ func TestApplyDefaults_RefNotStringError(t *testing.T) {
 		}
 	}`)
 		rawData = []byte(` { "int": 123 }`)
-		data    map[string]interface{}
-		schema  interface{}
+		data    map[string]any
+		schema  any
 	)
 
 	err := JSONUnmarshal(rawData, &data)
@@ -678,8 +679,8 @@ func TestApplyDefaults_RefInvalidError(t *testing.T) {
 		}
 	}`)
 		rawData = []byte(` { "int": 123 }`)
-		data    map[string]interface{}
-		schema  interface{}
+		data    map[string]any
+		schema  any
 	)
 
 	err := JSONUnmarshal(rawData, &data)
@@ -703,8 +704,8 @@ func TestApplyDefaults_RefPointerError(t *testing.T) {
 		}
 	}`)
 		rawData = []byte(` { "int": 123 }`)
-		data    map[string]interface{}
-		schema  interface{}
+		data    map[string]any
+		schema  any
 	)
 
 	err := JSONUnmarshal(rawData, &data)
@@ -745,8 +746,8 @@ func TestApplyDefaults_OneOfWithValidType(t *testing.T) {
   }
 }
 `)
-		data   map[string]interface{}
-		schema interface{}
+		data   map[string]any
+		schema any
 	)
 
 	err := JSONUnmarshal(rawData, &data)
