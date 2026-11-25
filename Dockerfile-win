@@ -1,0 +1,7 @@
+FROM golang:1.27-nanoserver-ltsc2022
+WORKDIR /src
+COPY . .
+
+USER ContainerAdministrator
+RUN go build -o C:\conflate .
+ENTRYPOINT ["c:\\conflate"]

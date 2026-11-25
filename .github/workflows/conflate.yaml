@@ -2,17 +2,24 @@ name: conflate
 
 on: [push]
 
+permissions:
+  contents: read
+
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: miracl/oidc-samples/samples/go
+  IMAGE_NAME: miracl/conflate
+  APP_NAME: conflate
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
 
@@ -20,9 +27,84 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
-          go-version: 1.*
+          go-version: 1.27
       - name: Go test
         run: go test -v ./...
+
+  build-docker:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/master' }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+      - uses: docker/build-push-action@v7
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build:
+    needs: run-tests
+    name: Build Binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build all targets
+        env:
+          CGO_ENABLED: 0
+        run: |
+          mkdir -p dist
+          targets=(
+            "linux/amd64"
+            "linux/arm64"
+            "darwin/amd64"
+            "darwin/arm64"
+            "windows/amd64"
+          )
+
+          for target in "${targets[@]}"; do
+            GOOS="${target%/*}"
+            GOARCH="${target#*/}"
+            ext=""
+            [ "$GOOS" = "windows" ] && ext=".exe"
+
+            echo "Building ${GOOS}/${GOARCH}..."
+            GOOS="$GOOS" GOARCH="$GOARCH" go build -trimpath -ldflags="-s -w" \
+              -o "dist/${APP_NAME}-${GOOS}-${GOARCH}${ext}" \
+              ./${APP_NAME}
+          done
+
+      - name: Upload combined build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.APP_NAME }}-binaries
+          path: dist/
+          retention-days: 14
