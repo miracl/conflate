@@ -6,9 +6,8 @@ _Library providing routines to merge and validate JSON, YAML, TOML files and/or 
 
 _Typical use case: Make your application configuration files **multi-format**, **modular**, **templated**, **sparse**, **location-independent** and **validated**_
 
-[![Build Status](https://secure.travis-ci.org/miracl/conflate.png?branch=master)](https://travis-ci.org/miracl/conflate?branch=master)
 [![Coverage Status](https://coveralls.io/repos/miracl/conflate/badge.svg?branch=master&service=github)](https://coveralls.io/github/miracl/conflate?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/miracl/conflate)](https://goreportcard.com/report/github.com/miracl/conflate)
+[![Build](https://github.com/miracl/conflate/actions/workflows/conflate.yaml/badge.svg?branch=master)](https://github.com/miracl/conflate/actions/workflows/conflate.yаml)
 
 ## Description
 
