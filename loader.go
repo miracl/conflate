@@ -10,6 +10,7 @@ import (
 	"net/http"
 	pkgurl "net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -136,8 +137,18 @@ func (l *loader) wrapFiledatas(bytes ...[]byte) (filedatas, error) {
 func loadURL(url *pkgurl.URL) ([]byte, error) {
 	if url.Scheme == "file" {
 		// attempt to load locally handling case where we are loading from fifo etc
-		//nolint:gosec // G703: path comes from trusted server configuration and should allow ..
-		b, err := os.ReadFile(getPath(url.Path))
+		p := getPath(url.Path)
+
+		dir, file := filepath.Split(filepath.Clean(p))
+
+		root, err := os.OpenRoot(dir)
+		if err != nil {
+			return nil, err
+		}
+
+		defer root.Close()
+
+		b, err := root.ReadFile(file)
 		if err == nil {
 			return b, nil
 		}
